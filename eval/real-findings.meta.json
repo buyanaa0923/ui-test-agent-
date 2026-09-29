@@ -1,0 +1,37 @@
+{
+  "collectedAt": "2026-09-29T22:28:24.937Z",
+  "collectedWith": {
+    "tool": "ui-test-agent@0.2.0",
+    "designSystem": "@netos/netsecure-design@1.4.1",
+    "tokensHash": "0591ddb9068f",
+    "rulesHash": "3d0cdbf96c59",
+    "trigger": "manual",
+    "node": "v25.9.0",
+    "at": "2026-09-29T22:28:24.937Z"
+  },
+  "hosts": [
+    "localhost:5200",
+    "localhost:5300"
+  ],
+  "flowOnlyHosts": [
+    "localhost:5181"
+  ],
+  "since": "2026-09-29T22:27:28Z",
+  "flowSince": "2026-09-29T22:21:38Z",
+  "note": "One record per distinct defect (light/dark and repeats across pages merged). Earlier model verdicts were dropped. Labels are empty on purpose: two engineers label independently via review/real-findings/sheet.html.",
+  "records": 18,
+  "byRule": {
+    "button-font-size": 1,
+    "contrast": 11,
+    "control-unlabeled": 2,
+    "dead-click": 1,
+    "js-error-blocked-context": 2,
+    "text-truncated-no-title": 1
+  },
+  "byKind": {
+    "design": 15,
+    "flow": 3
+  },
+  "runsUsed": 16,
+  "runsScanned": 264
+}

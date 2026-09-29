@@ -1,0 +1,64 @@
+{"id": "risk-000", "lang": "en", "label": "Delete account", "context": "button, account settings", "positive": true}
+{"id": "risk-001", "lang": "en", "label": "Remove customer", "context": "button, customer table row", "positive": true}
+{"id": "risk-002", "lang": "en", "label": "Transfer funds", "context": "button, payments page", "positive": true}
+{"id": "risk-003", "lang": "en", "label": "Pay now", "context": "button, invoice page", "positive": true}
+{"id": "risk-004", "lang": "en", "label": "Confirm payment", "context": "button, checkout", "positive": true}
+{"id": "risk-005", "lang": "en", "label": "Close account", "context": "button, account settings", "positive": true}
+{"id": "risk-006", "lang": "en", "label": "Sign out", "context": "button, top navigation", "positive": true}
+{"id": "risk-007", "lang": "en", "label": "Reset password", "context": "button, user admin", "positive": true}
+{"id": "risk-008", "lang": "en", "label": "Revoke access", "context": "button, permissions page", "positive": true}
+{"id": "risk-009", "lang": "en", "label": "Approve loan", "context": "button, loan review", "positive": true}
+{"id": "risk-010", "lang": "en", "label": "Disburse funds", "context": "button, loan review", "positive": true}
+{"id": "risk-011", "lang": "en", "label": "Cancel subscription", "context": "button, billing", "positive": true}
+{"id": "risk-012", "lang": "en", "label": "Withdraw cash", "context": "button, wallet", "positive": true}
+{"id": "risk-013", "lang": "en", "label": "Block card", "context": "button, card management", "positive": true}
+{"id": "risk-014", "lang": "en", "label": "Reverse transaction", "context": "button, transaction detail", "positive": true}
+{"id": "risk-015", "lang": "en", "label": "Delete all records", "context": "button, data tools", "positive": true}
+{"id": "risk-016", "lang": "mn", "label": "Устгах", "context": "button, table row action", "positive": true}
+{"id": "risk-017", "lang": "mn", "label": "Төлбөр төлөх", "context": "button, invoice page", "positive": true}
+{"id": "risk-018", "lang": "mn", "label": "Шилжүүлэг хийх", "context": "button, payments page", "positive": true}
+{"id": "risk-019", "lang": "mn", "label": "Данс хаах", "context": "button, account settings", "positive": true}
+{"id": "risk-020", "lang": "mn", "label": "Системээс гарах", "context": "button, top navigation", "positive": true}
+{"id": "risk-021", "lang": "mn", "label": "Нууц үг шинэчлэх", "context": "button, user admin", "positive": true}
+{"id": "risk-022", "lang": "mn", "label": "Зээл олгох", "context": "button, loan review", "positive": true}
+{"id": "risk-023", "lang": "mn", "label": "Эрх цуцлах", "context": "button, permissions page", "positive": true}
+{"id": "risk-024", "lang": "mn", "label": "Картыг блоклох", "context": "button, card management", "positive": true}
+{"id": "risk-025", "lang": "mn", "label": "Бүртгэл устгах", "context": "button, customer record", "positive": true}
+{"id": "risk-026", "lang": "mn", "label": "Мөнгө татах", "context": "button, wallet", "positive": true}
+{"id": "risk-027", "lang": "mn", "label": "Гүйлгээ буцаах", "context": "button, transaction detail", "positive": true}
+{"id": "risk-028", "lang": "mn", "label": "Хэрэглэгч хасах", "context": "button, user admin", "positive": true}
+{"id": "risk-029", "lang": "mn", "label": "Батлах", "context": "button, approve payment request", "positive": true}
+{"id": "risk-030", "lang": "mn", "label": "Баталгаажуулж төлөх", "context": "button, checkout", "positive": true}
+{"id": "risk-031", "lang": "mn", "label": "Бүх мэдээлэл арилгах", "context": "button, data tools", "positive": true}
+{"id": "risk-032", "lang": "en", "label": "Search", "context": "button, toolbar", "positive": false}
+{"id": "risk-033", "lang": "en", "label": "Next page", "context": "button, table pagination", "positive": false}
+{"id": "risk-034", "lang": "en", "label": "View details", "context": "button, table row", "positive": false}
+{"id": "risk-035", "lang": "en", "label": "Export CSV", "context": "button, toolbar", "positive": false}
+{"id": "risk-036", "lang": "en", "label": "Filter", "context": "button, toolbar", "positive": false}
+{"id": "risk-037", "lang": "en", "label": "Sort by date", "context": "button, table header", "positive": false}
+{"id": "risk-038", "lang": "en", "label": "Open menu", "context": "button, top navigation", "positive": false}
+{"id": "risk-039", "lang": "en", "label": "Cancel", "context": "button, modal footer", "positive": false}
+{"id": "risk-040", "lang": "en", "label": "Back", "context": "button, page header", "positive": false}
+{"id": "risk-041", "lang": "en", "label": "Print", "context": "button, report page", "positive": false}
+{"id": "risk-042", "lang": "en", "label": "Show more", "context": "button, card", "positive": false}
+{"id": "risk-043", "lang": "en", "label": "Switch to dark mode", "context": "button, top navigation", "positive": false}
+{"id": "risk-044", "lang": "en", "label": "Copy link", "context": "button, share popover", "positive": false}
+{"id": "risk-045", "lang": "en", "label": "Refresh", "context": "button, toolbar", "positive": false}
+{"id": "risk-046", "lang": "en", "label": "Download statement", "context": "button, statements page", "positive": false}
+{"id": "risk-047", "lang": "en", "label": "Close dialog", "context": "button, X button in modal header", "positive": false}
+{"id": "risk-048", "lang": "mn", "label": "Хайх", "context": "button, toolbar", "positive": false}
+{"id": "risk-049", "lang": "mn", "label": "Дараах", "context": "button, table pagination", "positive": false}
+{"id": "risk-050", "lang": "mn", "label": "Дэлгэрэнгүй", "context": "button, table row", "positive": false}
+{"id": "risk-051", "lang": "mn", "label": "Тайлан харах", "context": "button, reports page", "positive": false}
+{"id": "risk-052", "lang": "mn", "label": "Хэвлэх", "context": "button, report page", "positive": false}
+{"id": "risk-053", "lang": "mn", "label": "Шүүх", "context": "button, toolbar", "positive": false}
+{"id": "risk-054", "lang": "mn", "label": "Эрэмбэлэх", "context": "button, table header", "positive": false}
+{"id": "risk-055", "lang": "mn", "label": "Цэс нээх", "context": "button, top navigation", "positive": false}
+{"id": "risk-056", "lang": "mn", "label": "Цуцлах", "context": "button, modal footer", "positive": false}
+{"id": "risk-057", "lang": "mn", "label": "Буцах", "context": "button, page header", "positive": false}
+{"id": "risk-058", "lang": "mn", "label": "Илүү харах", "context": "button, card", "positive": false}
+{"id": "risk-059", "lang": "mn", "label": "Харанхуй горим", "context": "button, top navigation", "positive": false}
+{"id": "risk-060", "lang": "mn", "label": "Хуулах", "context": "button, share popover", "positive": false}
+{"id": "risk-061", "lang": "mn", "label": "Шинэчлэх", "context": "button, toolbar", "positive": false}
+{"id": "risk-062", "lang": "mn", "label": "Татаж авах", "context": "button, statements page", "positive": false}
+{"id": "risk-063", "lang": "mn", "label": "Хаах", "context": "button, X button in modal header", "positive": false}

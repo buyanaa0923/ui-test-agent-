@@ -1,0 +1,1 @@
+{"answers":{"real_defect":{"type":"noul","noul":0.83,"confidence":0.83,"confidenceDerived":true}},"derivedConfidence":true,"model":"jev-1.13.0","usage":{"model":"jev-1.13","inputTokens":542,"outputTokens":22},"ms":257}

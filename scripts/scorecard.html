@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Judge Scorecard</title>
+<style>
+:root{
+  --bg:#f6f6f4; --surface:#fcfcfb; --line:#e4e3de; --grid:#ecebe7;
+  --text:#0b0b0b; --text2:#52514e; --muted:#7a7974;
+  --claude:#2a78d6; --jev:#eb6834; --cascade:#1baf7a; --accent:#2a78d6;
+  --good:#0f7b4f; --goodbg:#e3f4ec; --warn:#8a5a00; --warnbg:#fbf0d6; --none:#5b5a56; --nonebg:#eeede9;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121211; --surface:#1a1a19; --line:#2e2d2a; --grid:#262624;
+    --text:#ffffff; --text2:#c3c2b7; --muted:#8f8e86;
+    --claude:#3987e5; --jev:#d95926; --cascade:#199e70; --accent:#3987e5;
+    --good:#5fd3a2; --goodbg:#12301f; --warn:#f0c15a; --warnbg:#33290d; --none:#c3c2b7; --nonebg:#262624;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121211; --surface:#1a1a19; --line:#2e2d2a; --grid:#262624;
+  --text:#ffffff; --text2:#c3c2b7; --muted:#8f8e86;
+  --claude:#3987e5; --jev:#d95926; --cascade:#199e70; --accent:#3987e5;
+  --good:#5fd3a2; --goodbg:#12301f; --warn:#f0c15a; --warnbg:#33290d; --none:#c3c2b7; --nonebg:#262624;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 16px 64px}
+header h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em}
+header p{margin:0;color:var(--text2)}
+.stamp{margin-top:10px;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);word-break:break-all}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+button{font:inherit;font-size:13px;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--text2)}
+button[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
+section{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin-top:20px;padding:20px}
+.shead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.shead h2{font-size:19px;margin:0}
+.pts{color:var(--muted);font-size:13px}
+.pill{font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;display:inline-flex;align-items:center;gap:5px}
+.pill.measured{background:var(--goodbg);color:var(--good)} .pill.partial{background:var(--warnbg);color:var(--warn)} .pill.notyet{background:var(--nonebg);color:var(--none)}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.partial::before{background:linear-gradient(90deg,currentColor 50%,transparent 50%);box-shadow:inset 0 0 0 1px currentColor}
+.pill.notyet::before{background:transparent;box-shadow:inset 0 0 0 1.5px currentColor}
+.lead{color:var(--text2);margin:0 0 16px;font-size:14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:18px}
+.tile{border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.tile .v{font-size:26px;font-weight:650;letter-spacing:-.02em;line-height:1.1}
+.tile .l{font-size:12.5px;color:var(--text2);margin-top:4px}
+.tile .s{font-size:12px;color:var(--muted);margin-top:2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.chart{margin:8px 0 18px}
+.chart h3{font-size:14px;margin:0 0 2px}
+.chart .note{font-size:12.5px;color:var(--muted);margin:0 0 6px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--text2);margin:4px 0 2px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font:11.5px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:var(--text2)}
+svg .val{fill:var(--text);font-weight:600}
+svg .axis{stroke:var(--line)} svg .grid{stroke:var(--grid)}
+table{border-collapse:collapse;width:100%;font-size:13px;margin:6px 0 16px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--text2);font-weight:600;font-size:12px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.tview{display:none} section.table-mode .tview{display:block} section.table-mode .cview{display:none}
+.callout{border-left:3px solid var(--warn);background:var(--warnbg);color:var(--text);padding:10px 12px;border-radius:0 8px 8px 0;font-size:13px;margin:12px 0}
+.empty{color:var(--muted);font-size:13.5px;border:1px dashed var(--line);border-radius:10px;padding:12px 14px}
+.tip{position:fixed;z-index:9;pointer-events:none;background:var(--text);color:var(--bg);font-size:12px;padding:6px 9px;border-radius:7px;max-width:260px;display:none;line-height:1.35}
+h4{font-size:13px;margin:14px 0 4px;color:var(--text2)}
+code{font:12px ui-monospace,Menlo,monospace;background:var(--nonebg);padding:1px 5px;border-radius:4px}
+footer{margin-top:22px;color:var(--muted);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Judge scorecard</h1>
+    <p>Frontend UI testing agent &middot; every number below is read from files the tool wrote, and can be regenerated with the commands at the bottom.</p>
+    <div class="stamp" id="stamp"></div>
+    <div class="toolbar"><button id="theme" aria-pressed="false">Toggle dark</button><button id="tables" aria-pressed="false">Table view</button></div>
+  </header>
+  <div id="root"></div>
+  <footer id="foot"></footer>
+</div>
+<div class="tip" id="tip"></div>
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const pct = (v, d = 1) => v == null ? '–' : (v * 100).toFixed(d).replace(/\.0$/, '') + '%';
+const usd = (v) => v == null ? '–' : v < 0.01 ? '$' + v.toFixed(4) : '$' + v.toFixed(2);
+const ms = (v) => v == null ? '–' : v < 1000 ? Math.round(v) + ' ms' : (v / 1000).toFixed(1) + ' s';
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const STATUS = { measured: 'Measured', partial: 'Partly measured', notyet: 'Not yet measured', prototype: 'Prototype', pilot: 'Pilot', production: 'Production' };
+const tiles = (arr) => `<div class="tiles">${arr.map((t) => `<div class="tile"><div class="v">${t.v}</div><div class="l">${t.l}</div>${t.s ? `<div class="s">${t.s}</div>` : ''}</div>`).join('')}</div>`;
+const table = (head, rows, nums = []) => `<div style="overflow-x:auto"><table><thead><tr>${head.map((h, i) => `<th class="${nums.includes(i) ? 'n' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c, i) => `<td class="${nums.includes(i) ? 'n' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+
+/* ---------- charts (plain SVG, sized to their container) ---------- */
+const tipEl = $('#tip');
+function tip(e, html) { tipEl.innerHTML = html; tipEl.style.display = 'block'; const w = tipEl.offsetWidth; tipEl.style.left = Math.min(innerWidth - w - 8, Math.max(8, e.clientX + 12)) + 'px'; tipEl.style.top = e.clientY + 14 + 'px'; }
+document.addEventListener('mousemove', (e) => { const t = e.target.closest && e.target.closest('[data-tip]'); if (t) tip(e, t.dataset.tip); else tipEl.style.display = 'none'; });
+document.addEventListener('mouseleave', () => tipEl.style.display = 'none');
+
+const colorOf = { claude: 'var(--claude)', jev: 'var(--jev)', cascade: 'var(--cascade)' };
+const nameOf = { claude: 'Claude only', jev: 'Jev only', cascade: 'Jev → Claude cascade' };
+const legend = (keys) => `<div class="legend">${keys.map((k) => `<span><i style="background:${colorOf[k]}"></i>${nameOf[k]}</span>`).join('')}</div>`;
+function topRounded(x, y, w, h, r) { r = Math.min(r, w / 2, h); return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`; }
+
+// spec: { cats:[], series:[{key,values:[],tips:[]}], fmt, max, ticks }
+function groupedBars(spec, W) {
+  const H = 250, L = 44, R = 8, T = 18, B = 40, pw = W - L - R, ph = H - T - B;
+  const max = spec.max, g = pw / spec.cats.length, ns = spec.series.length;
+  const bw = Math.max(8, Math.min(26, (g * 0.72) / ns - 2)), used = ns * bw + (ns - 1) * 2;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(spec.aria)}">`;
+  for (const t of spec.ticks) { const y = T + ph - (t / max) * ph; s += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y}" y2="${y}"/><text x="${L - 6}" y="${y + 4}" text-anchor="end">${spec.tickFmt(t)}</text>`; }
+  s += `<line class="axis" x1="${L}" x2="${W - R}" y1="${T + ph}" y2="${T + ph}"/>`;
+  spec.cats.forEach((c, i) => {
+    const cx = L + g * i + g / 2;
+    spec.series.forEach((se, k) => {
+      const v = se.values[i], x = cx - used / 2 + k * (bw + 2);
+      if (v == null) { s += `<text x="${x + bw / 2}" y="${T + ph - 4}" text-anchor="middle" style="fill:var(--muted)">n/a</text>`; return; }
+      const h = Math.max(1, (v / max) * ph), y = T + ph - h;
+      s += `<path d="${topRounded(x, y, bw, h, 4)}" style="fill:${colorOf[se.key]}"/>`;
+      s += `<text class="val" style="font-size:10.5px" x="${x + bw / 2}" y="${y - 4}" text-anchor="middle">${(spec.short || spec.fmt)(v)}</text>`;
+      s += `<rect x="${x - 2}" y="${T}" width="${bw + 4}" height="${ph}" fill="transparent" data-tip="${esc(`<b>${nameOf[se.key]}</b><br>${c}<br>${spec.fmt(v)}${se.tips?.[i] ? '<br>' + se.tips[i] : ''}`)}"/>`;
+    });
+    const words = c.split(' '), half = Math.ceil(words.length / 2);
+    const lines = words.length > 2 && g < 190 ? [words.slice(0, half).join(' '), words.slice(half).join(' ')] : [c];
+    lines.forEach((ln, j) => { s += `<text x="${cx}" y="${T + ph + 16 + j * 13}" text-anchor="middle">${esc(ln)}</text>`; });
+  });
+  return s + '</svg>';
+}
+
+function lineChart(spec, W) {
+  const H = 210, L = 40, R = 14, T = 16, B = 34, pw = W - L - R, ph = H - T - B;
+  const n = spec.pts.length, lo = spec.min, hi = 1;
+  const X = (i) => L + (n === 1 ? pw / 2 : (pw * i) / (n - 1)), Y = (v) => T + ph - ((v - lo) / (hi - lo)) * ph;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(spec.aria)}">`;
+  for (let t = lo; t <= hi + 1e-9; t += 0.1) { const y = Y(t); s += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y}" y2="${y}"/><text x="${L - 6}" y="${y + 4}" text-anchor="end">${Math.round(t * 100)}%</text>`; }
+  s += `<line class="axis" x1="${L}" x2="${W - R}" y1="${T + ph}" y2="${T + ph}"/>`;
+  const live = spec.pts.map((p, i) => ({ ...p, i })).filter((p) => p.acc != null && p.coverage > 0);
+  if (live.length > 1) s += `<path d="${live.map((p, k) => `${k ? 'L' : 'M'}${X(p.i)},${Y(p.acc)}`).join('')}" fill="none" style="stroke:var(--jev)" stroke-width="2" stroke-linejoin="round"/>`;
+  spec.pts.forEach((p, i) => {
+    s += `<text x="${X(i)}" y="${T + ph + 16}" text-anchor="middle">${p.gate}</text>`;
+    if (p.acc == null || p.coverage === 0) return;
+    const cur = p.gate === spec.current;
+    s += `<circle cx="${X(i)}" cy="${Y(p.acc)}" r="${cur ? 5 : 4}" style="fill:var(--jev);stroke:var(--surface)" stroke-width="2"/>`;
+    if (cur) s += `<text class="val" x="${X(i)}" y="${Y(p.acc) - 10}" text-anchor="middle">${pct(p.acc, 0)} at ${pct(p.coverage, 0)} coverage</text>`;
+    s += `<circle cx="${X(i)}" cy="${Y(p.acc)}" r="13" fill="transparent" data-tip="${esc(`<b>Confidence gate ${p.gate}</b><br>Jev settles ${pct(p.coverage, 0)} of cases at ${pct(p.acc)} accuracy<br>${p.escalated} cases go to Claude`)}"/>`;
+  });
+  s += `<text x="${L + pw / 2}" y="${H - 2}" text-anchor="middle" style="fill:var(--muted)">confidence gate (higher = Jev settles fewer cases, more accurately)</text>`;
+  return s + '</svg>';
+}
+
+/* ---------- page ---------- */
+function build(D) {
+  const ev = D.evidence, q = D.quality, o = D.outcome, a = D.autonomy, k = D.knowledge, E = q.eval, S = E?.sets;
+  const pill = (s) => `<span class="pill ${s === 'measured' ? 'measured' : s === 'notyet' ? 'notyet' : 'partial'}">${STATUS[s]}</span>`;
+  const charts = []; // {id, render(W)}
+  const holder = (id, title, note, keys) => `<div class="chart"><h3>${title}</h3><p class="note">${note}</p>${keys ? legend(keys) : ''}<div id="${id}"></div></div>`;
+  let html = '';
+
+  // 1. Business outcome
+  const stagePts = o.stage === 'production' ? '30' : o.stage === 'pilot' ? '15' : '0';
+  html += `<section id="s1"><div class="shead"><h2>Verified business outcome</h2><span class="pts">30 pts</span><span class="pill ${o.stage === 'prototype' ? 'notyet' : 'measured'}">${STATUS[o.stage] || 'Prototype'}</span></div>
+  <p class="lead">Rubric: prototype scores 0, a pilot in a real workflow 15, production 30. The tool does not overstate its stage; it is set in <code>config/outcome.json</code>.${o.pilotTarget ? ` Pilot target: ${esc(o.pilotTarget)}.` : ''}</p>
+  ${tiles([
+    { v: o.runsTotal, l: 'Completed test runs', s: `${o.servedAppRuns} against served web apps` },
+    { v: o.totalFindings, l: 'Findings surfaced', s: 'each with a rule, element and evidence' },
+    { v: ms(o.medianScanMs), l: 'Median single-page scan', s: 'incl. browser start-up' },
+    o.timeSavedMin != null ? { v: o.timeSavedMin + ' min', l: 'Reviewer time saved', s: `vs ${o.manualMinutesPerPage} min/page by hand (${esc(o.manualMinutesSource)})` } : { v: 'not yet', l: 'Reviewer time saved', s: 'needs a timed manual baseline (manualMinutesPerPage)' }
+  ])}
+  ${o.stage === 'prototype' ? '<div class="callout">Stage is <b>prototype</b> (0 pts on this criterion). Moving to pilot needs a run inside Hefesto’s DEV_TEST/UAT_TEST stage with its result recorded.</div>' : ''}
+  <h4>Recent runs</h4>${o.recentRuns.length ? table(['When', 'Kind', 'Target', 'Findings', 'Time', 'Trigger'], o.recentRuns.map((r) => [esc(r.at.replace('T', ' ').slice(0, 16)), r.kind, esc((r.url || '').replace(/^file:.*\//, 'file: ')), r.findings, ms(r.totalMs), r.trigger]), [3, 4]) : '<div class="empty">No completed runs yet.</div>'}
+  </section>`;
+
+  // 2. Quality & reliability
+  const m = q.mutation, R = S?.risk, T = S?.triage;
+  html += `<section id="s2"><div class="shead"><h2>Quality &amp; reliability</h2><span class="pts">25 pts</span>${pill(ev.quality)}</div>
+  <p class="lead">Rubric: at least 90% on a representative test, plus a fallback/escalation log. Three layers are measured separately: the deterministic rules, the model decisions, and the safety behaviour when models fail.</p>
+  ${tiles([
+    m ? { v: `${m.overall.tp}/${m.positives}`, l: 'Seeded design defects found', s: `${m.cases} generated pages, ${m.overall.fp} false alarms on ${m.negatives} clean pages` } : { v: '–', l: 'Mutation benchmark', s: 'run npm run bench' },
+    q.determinism ? { v: q.determinism.allDeterministic ? '100%' : 'FAIL', l: 'Identical results on repeat', s: `${q.determinism.runs} runs on each of ${q.determinism.pages} pages` } : { v: '–', l: 'Determinism', s: 'run npm run determinism' },
+    q.tests ? { v: `${q.tests.pass}/${q.tests.total}`, l: 'Automated tests passing', s: 'includes sabotage tests that must fail' } : { v: '–', l: 'Tests', s: 'run npm run evidence' },
+    R ? { v: pct(R.jev.accuracy), l: 'Jev accuracy, action-risk screen', s: `${R.n} labelled controls, EN + MN` } : { v: '–', l: 'Jev evaluation', s: 'run npm run eval:jev' }
+  ])}
+  <div class="cview">
+  ${S ? `<div class="callout">Model evaluation sets (${R?.n ?? 0} risk, ${T?.n ?? 0} triage) were authored by the project team and used while building, so treat them as development sets. A held-out set of real Hefesto findings, labelled independently, is the next step.</div>` : ''}
+  ${S ? holder('c-acc', 'Accuracy on labelled decisions', 'Higher is better. Rules + models applies the deterministic exemptions first (WCAG-based), then the models.', ['claude', 'jev', 'cascade']) : ''}
+  ${S ? holder('c-cost', 'Cost per 1,000 decisions', 'Lower is better. Priced from the token counts the APIs returned.', ['claude', 'jev', 'cascade']) : ''}
+  ${S ? `<div class="grid2">${holder('c-cov-r', 'Jev on the risk screen: coverage vs accuracy', 'Raising the gate hands more cases to Claude.')}${holder('c-cov-t', 'Jev on triage: coverage vs accuracy', 'Jev is weaker here, so the gate matters more.')}</div>` : ''}
+  </div>
+  <div class="tview">${S ? `<h4>Accuracy and cost</h4>${table(['Decision', 'Model', 'Accuracy', 'Precision', 'Recall', 'Cost / 1k'], evalRows(S), [2, 3, 4, 5])}` : ''}</div>
+  ${S && R?.jev?.byLanguage ? `<h4>English vs Mongolian (Jev, risk screen)</h4>${table(['Language', 'Cases', 'Accuracy', 'Recall'], ['en', 'mn'].map((l) => [l === 'en' ? 'English' : 'Mongolian', R.jev.byLanguage[l].n, pct(R.jev.byLanguage[l].accuracy), pct(R.jev.byLanguage[l].recall)]), [1, 2, 3])}` : ''}
+  ${S && R?.jev?.calibration ? `<p class="lead">Calibration error (ECE) for Jev: ${R.jev.calibration.ece} on the risk screen${T?.jev?.calibration ? `, ${T.jev.calibration.ece} on triage` : ''}. Lower means stated confidence matches how often it is right; the gates rely on this.</p>` : ''}
+  ${m ? `<h4>Deterministic rules, per rule (seed ${m.seed})</h4>${table(['Rule', 'Found', 'Missed', 'False alarms', 'F1'], m.perRule.map((r) => [r.rule, r.tp, r.fn, r.fp, r.f1]), [1, 2, 3, 4])}` : ''}
+  ${(() => {
+    const RL = q.real, w = (c) => (c ? `${(c.p * 100).toFixed(1)}% (${c.k}/${c.n}, 95% CI ${(c.lo * 100).toFixed(0)}-${(c.hi * 100).toFixed(0)}%)` : 'n/a');
+    if (!RL?.eval) return `<h4>Real-app evaluation</h4><p class="lead"><b>Not yet measured.</b> ${RL?.set ? `${RL.set.records} real findings from Hefesto-generated pages and the NetOS shell are collected and waiting for two engineers to label them independently${RL.labels ? ` (${RL.labels.finalLabels} final labels so far)` : ''}.` : 'No real findings collected yet.'} The numbers above (benchmark, Jev vs Claude) come from cases written by the project author, not from people labelling real pages.</p>`;
+    const e = RL.eval, c = e.cascade, kp = RL.labels?.kappa;
+    return `<h4>Real-app evaluation (labelled by two engineers)</h4>
+      ${e.target.status === 'met' ? '' : `<p class="lead"><b>${e.target.status === 'preliminary' ? 'Preliminary' : 'Target not met'}:</b> ${e.target.status === 'preliminary' ? `only ${e.nModelEligible} findings, below the ${e.target.minNForClaim ?? 30} needed to make a claim.` : `cascade accuracy is below ${(e.target.goal * 100).toFixed(0)}%.`}</p>`}
+      ${tiles([
+        { v: e.n, l: 'Labelled real findings', s: `${e.clusters} distinct root causes` },
+        { v: kp && kp.kappa != null ? kp.kappa.toFixed(2) : '–', l: "Labeller agreement (Cohen's kappa)", s: kp ? `${kp.interpretation}, ${kp.n} items` : 'not computed' },
+        { v: c.accuracyOnDecided ? pct(c.accuracyOnDecided.p) : '–', l: 'Cascade accuracy on what it decided', s: w(c.accuracyOnDecided) },
+        { v: c.escalatedToHuman, l: 'Sent to a person', s: `${c.escalatedToClaude} went to Claude first` }
+      ])}
+      ${table(['Layer', 'Result on this labelled set'], [
+        ['L0 rules: findings people agreed were real', e.rules?.overall ? w(e.rules.overall) : 'n/a'],
+        ['L1 Jev alone', e.jev ? w(e.jev.accuracy) : 'n/a'],
+        ['L2 Claude alone', e.claude?.accuracy ? w(e.claude.accuracy) : 'n/a'],
+        ['Cascade, counting findings sent to a person as misses', w(c.strictAccuracy)]
+      ])}
+      <p class="lead">Recall on real pages is not measured (a rule that misses a defect never produces a finding to label). Gates are the production values, not tuned on these labels.</p>`;
+  })()}
+  <h4>Fail-safe behaviour (covered by automated tests)</h4>
+  ${q.tests ? `<ul style="margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--text2)">${q.tests.names.filter((n) => /outage|fail|down|falls back|unjudged|budget|sabotag|removing/i.test(n)).map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : '<div class="empty">Run <code>npm run evidence</code> to list them.</div>'}
+  </section>`;
+
+  // 3. Autonomy
+  const days = Object.entries(a.perDay).sort();
+  html += `<section id="s3"><div class="shead"><h2>Autonomy &amp; continuous improvement</h2><span class="pts">25 pts</span>${pill(ev.autonomy)}</div>
+  <p class="lead">How much the tool settles by itself, how often a person has to step in, and whether it improves from that feedback.</p>
+  ${tiles([
+    { v: a.interventionRate == null ? '–' : pct(a.interventionRate), l: 'Findings needing a person', s: a.modelJudged ? `${a.needsHuman} of ${a.modelJudged} triaged findings` : 'no triaged scan yet (run scan --cascade)' },
+    { v: a.scheduledRuns, l: 'Scheduled (unattended) runs', s: `${a.manualRuns} started by hand` },
+    { v: a.escalations, l: 'Escalated to a stronger model', s: 'Jev → Claude, logged per decision' },
+    { v: a.fallbacks, l: 'Fallbacks taken', s: 'model down or unsure → safe default' }
+  ])}
+  ${days.length ? `<h4>Runs per day</h4>${table(['Day', 'Manual', 'Scheduled'], days.map(([d, x]) => [d, x.manual, x.scheduled]), [1, 2])}` : ''}
+  ${a.feedbackLoop ? `<p class="lead">${esc(a.feedbackLoop)}</p>` : '<div class="empty">Feedback loop: not yet built. Planned: reviewer accept/reject of a finding is stored, and dismissed patterns become new exemptions or evaluation cases.</div>'}
+  </section>`;
+
+  // 4. Knowledge sharing
+  html += `<section id="s4"><div class="shead"><h2>Knowledge sharing</h2><span class="pts">20 pts</span>${pill(ev.knowledge)}</div>
+  <p class="lead">Who else can run it and who has. Entries come from <code>config/outcome.json</code>.</p>
+  ${k.adoption.length ? table(['Who / team', 'What they did', 'When'], k.adoption.map((x) => [esc(x.who || x.team), esc(x.what || x.use), esc(x.when || '')])) : '<div class="empty">No adopters recorded yet. Colleagues test it on 2026-10-01; add them to <code>adoption</code> in <code>config/outcome.json</code>.</div>'}
+  </section>`;
+
+  $('#root').innerHTML = html;
+
+  // chart renderers
+  if (S) {
+    const cats = ['Risk screen', 'Triage (models only)', 'Triage (rules + models)'];
+    const g = (set, key) => set?.[key];
+    const acc = { cats, aria: 'Accuracy of Claude, Jev and the cascade on three decision sets', max: 1, ticks: [0, 0.25, 0.5, 0.75, 1], tickFmt: (t) => Math.round(t * 100) + '%', fmt: (v) => pct(v), short: (v) => Math.round(v * 100) + '%',
+      series: ['claude', 'jev', 'cascade'].map((key) => ({ key, values: [g(R, key)?.accuracy, g(T, key)?.accuracy, g(T?.pipeline, key)?.accuracy].map((v) => v ?? null),
+        tips: [R, T, T?.pipeline].map((s) => s?.[key] ? `n=${s[key].n}` : '') })) };
+    charts.push(['c-acc', (W) => groupedBars(acc, W)]);
+    const costMax = Math.max(...['claude', 'jev', 'cascade'].flatMap((key) => [R?.[key]?.costPer1kDecisions, T?.[key]?.costPer1kDecisions]).filter((v) => v != null), 0.001);
+    const cost = { cats: ['Risk screen', 'Triage'], aria: 'Cost per 1000 decisions for Claude, Jev and the cascade', max: niceTicks(costMax).at(-1), ticks: niceTicks(costMax), tickFmt: (t) => '$' + t.toFixed(2), fmt: (v) => '$' + (v < 0.1 ? v.toFixed(3) : v.toFixed(2)), short: (v) => '$' + v.toFixed(2),
+      series: ['claude', 'jev', 'cascade'].map((key) => ({ key, values: [R?.[key]?.costPer1kDecisions ?? null, T?.[key]?.costPer1kDecisions ?? null], tips: [R?.[key]?.escalationRate != null ? `${pct(R[key].escalationRate, 0)} escalated to Claude` : '', T?.[key]?.escalationRate != null ? `${pct(T[key].escalationRate, 0)} escalated to Claude` : ''] })) };
+    charts.push(['c-cost', (W) => groupedBars(cost, W)]);
+    const cov = (set, id) => { const c = set?.jev?.coverage; if (!c) return; const accs = c.filter((p) => p.coverage > 0).map((p) => p.accuracy); const lo = Math.max(0, Math.floor((Math.min(...accs, 0.9) - 0.02) * 10) / 10);
+      charts.push([id, (W) => lineChart({ aria: 'Jev coverage versus accuracy by confidence gate', min: lo, current: E.gates.confirm, pts: c.map((p) => ({ gate: p.gate, acc: p.coverage ? p.accuracy : null, coverage: p.coverage, escalated: p.escalated })) }, W)]); };
+    cov(R, 'c-cov-r'); cov(T, 'c-cov-t');
+  }
+  const paint = () => charts.forEach(([id, fn]) => { const el = document.getElementById(id); if (el) el.innerHTML = fn(Math.max(280, el.clientWidth)); });
+  paint(); let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(paint, 120); });
+
+  const st = D.stamp;
+  $('#stamp').textContent = st ? `${st.tool} · design system ${st.designSystem} · tokens ${st.tokensHash} · rules ${st.rulesHash} · generated ${D.generatedAt.replace('T', ' ').slice(0, 16)}Z` : `generated ${D.generatedAt}`;
+  $('#foot').innerHTML = `Reproduce: <code>npm run evidence</code> (tests, mutation benchmark, determinism), <code>npm run eval:replay</code> (model scores from the recorded responses, no network, no cost), <code>npm run scorecard</code> (this page as one file).`;
+}
+
+function niceTicks(mx) { const step = [0.1, 0.25, 0.5, 1, 2, 5].find((x) => mx / x <= 5) || 5; const out = []; for (let t = 0; t < mx + step * 0.999; t += step) out.push(+t.toFixed(4)); return out; }
+function evalRows(S) {
+  const rows = [], add = (label, set, cost) => { for (const key of ['claude', 'jev', 'cascade']) { const x = set?.[key]; if (x) rows.push([label, nameOf[key], pct(x.accuracy), pct(x.precision), pct(x.recall), cost ? usd(x.costPer1kDecisions) : '–']); } };
+  add('Risk screen', S.risk, true); add('Triage (models only)', S.triage, true); add('Triage (rules + models)', S.triage?.pipeline, true);
+  return rows;
+}
+
+$('#theme').onclick = (e) => { const dark = document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches); document.documentElement.dataset.theme = dark ? 'light' : 'dark'; e.target.setAttribute('aria-pressed', String(!dark)); };
+$('#tables').onclick = (e) => { const on = e.target.getAttribute('aria-pressed') !== 'true'; e.target.setAttribute('aria-pressed', String(on)); document.querySelectorAll('section').forEach((s) => s.classList.toggle('table-mode', on)); };
+
+(window.__DATA__ ? Promise.resolve(window.__DATA__) : fetch('/api/scorecard').then((r) => r.json())).then(build).catch((e) => { $('#root').innerHTML = `<section><div class="empty">Could not load scorecard data: ${esc(e.message)}</div></section>`; });
+</script>
+</body>
+</html>

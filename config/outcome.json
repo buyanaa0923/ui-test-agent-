@@ -1,0 +1,9 @@
+{
+  "_note": "Facts only a person can supply. Leave a field null / empty until it is true; the scorecard shows 'not yet measured' rather than a guess.",
+  "stage": "prototype",
+  "pilotTarget": "Hefesto DEV_TEST / UAT_TEST stage",
+  "manualMinutesPerPage": null,
+  "manualMinutesSource": "e.g. 'timed engineer X reviewing 5 pages by hand on 2026-10-01'",
+  "adoption": [],
+  "notes": ""
+}

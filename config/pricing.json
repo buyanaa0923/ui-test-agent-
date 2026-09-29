@@ -1,0 +1,12 @@
+{
+  "currency": "USD",
+  "_note": "Prices per 1M tokens. null = unknown; the meter reports those calls as 'unpriced' instead of guessing. Verify against console.anthropic.com/pricing and console.typesafe.ai before quoting.",
+  "models": {
+    "jev-1.13": { "inputPerM": 0.042, "outputPerM": 0, "note": "List price reported at launch (Sept 2026): input metered, output free. Unverified for your account." },
+    "playwright": { "inputPerM": 0, "outputPerM": 0, "note": "Deterministic browser work, no model tokens" },
+    "heuristic": { "inputPerM": 0, "outputPerM": 0, "note": "Local rule-based picker, no tokens" },
+    "claude-sonnet-5-5": { "inputPerM": 2, "outputPerM": 10, "note": "Sonnet 5.5 list price; cache hits and batch are cheaper" },
+    "claude-haiku-4-5": { "inputPerM": 1, "outputPerM": 5, "note": "Cheaper verdict model if Sonnet is not needed" },
+    "claude-cli": { "inputPerM": null, "outputPerM": null, "note": "Verdicts through the company's `claude -p` runner: cost lives on that subscription, so it is shown as unpriced" }
+  }
+}

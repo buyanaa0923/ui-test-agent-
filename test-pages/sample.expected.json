@@ -1,0 +1,13 @@
+[
+  "btn-bad-height|button-height",
+  "btn-bad-font|button-font-size",
+  "btn-raw-hex|raw-color-literal",
+  "btn-icon-noname|button-unnamed",
+  "btn-wrap|button-text-wrap",
+  "card-bad-radius|radius-scale",
+  "txt-bad-font|font-family",
+  "f-no-label|control-unlabeled",
+  "hint|contrast",
+  "spill|text-overflow",
+  "trunc-no-title|text-truncated-no-title"
+]

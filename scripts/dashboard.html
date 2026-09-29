@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI Test Agent</title>
+<style>
+:root{--bg:#f6f8fa;--panel:#fff;--panel2:#f1f5f9;--line:#e2e8f0;--text:#0f172a;--muted:#64748b;--brand:#008779;--brandSoft:#e6f4f2;--jev:#7c5cff;--claude:#d97706;--ok:#10b981;--warn:#f59e0b;--bad:#f43f5e;--shadow:0 1px 2px rgba(15,23,42,.06),0 8px 24px rgba(15,23,42,.06)}
+:root[data-theme=dark]{--bg:#0a0f1c;--panel:#111a2e;--panel2:#0d1526;--line:#1e2b47;--text:#f1f5f9;--muted:#94a3b8;--brand:#2dd4bf;--brandSoft:#0f2f33;--jev:#a78bfa;--claude:#fbbf24;--shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.35)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1360px;margin:0 auto;padding:20px 24px 48px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--brand),#1c285e);display:grid;place-items:center;color:#fff;font-weight:800}
+h1{font:700 18px Montserrat,Inter,sans-serif;margin:0}
+.sub{color:var(--muted);font-size:12px}
+.spacer{flex:1}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-size:12px;font-weight:600}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.live .dot{background:var(--ok);box-shadow:0 0 0 0 rgba(16,185,129,.6);animation:pulse 1.4s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 9px rgba(16,185,129,0)}100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}}
+button.icon{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:999px;height:32px;padding:0 12px;cursor:pointer;font-weight:600;font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.kpi{padding:16px 18px}
+.kpi .l{color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.kpi .v{font:700 28px Montserrat,Inter,sans-serif;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .n{color:var(--muted);font-size:12px;margin-top:2px}
+.grid{display:grid;grid-template-columns:320px 1fr;gap:18px;align-items:start}
+.list{padding:8px;max-height:calc(100vh - 250px);overflow:auto}
+.run{padding:12px;border-radius:12px;cursor:pointer;border:1px solid transparent}
+.run:hover{background:var(--panel2)}
+.run.sel{background:var(--brandSoft);border-color:var(--brand)}
+.run .t{font-weight:600;display:flex;gap:8px;align-items:center}
+.run .m{color:var(--muted);font-size:12px;margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
+.tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+.tag.flow{color:var(--jev)}.tag.design{color:var(--brand)}.tag.benchmark{color:var(--claude)}
+.detail{padding:20px}
+.dh{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.dh h2{margin:0;font:700 18px Montserrat,Inter,sans-serif}
+.meter{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.mbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.mbox .l{color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.mbox .v{font:700 22px Montserrat,Inter,sans-serif;font-variant-numeric:tabular-nums}
+.mbox .n{font-size:11px;color:var(--muted)}
+.bar{height:8px;border-radius:99px;background:var(--panel2);overflow:hidden;border:1px solid var(--line)}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--jev));transition:width .5s}
+h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:22px 0 10px}
+.tl{display:grid;gap:6px}
+.tl .row{display:grid;grid-template-columns:130px 1fr 110px;gap:10px;align-items:center;font-size:12px}
+.tl .b{height:14px;border-radius:6px;min-width:3px}
+.tl .row .name{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:8px}
+.legend b{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.chip{cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600}
+.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.el{font-family:JetBrains Mono,ui-monospace,monospace;font-size:12px;max-width:280px;word-break:break-all}
+.sev{font-weight:700;font-size:11px;text-transform:uppercase}.sev.high{color:var(--bad)}.sev.medium{color:var(--warn)}.sev.low{color:var(--muted)}
+.vd{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.vd.real{background:rgba(244,63,94,.14);color:var(--bad)}.vd.false_positive{background:rgba(16,185,129,.14);color:var(--ok)}.vd.needs_human,.vd.unjudged{background:var(--panel2);color:var(--muted)}
+.fix{color:var(--muted);font-size:12px;margin-top:2px}
+.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.shots img{width:100%;border-radius:10px;border:1px solid var(--line);cursor:zoom-in;max-height:260px;object-fit:cover;object-position:top}
+.empty{color:var(--muted);padding:40px;text-align:center}
+.step{display:grid;grid-template-columns:28px 1fr auto auto;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:center;font-size:13px}
+.ok{color:var(--ok)}.no{color:var(--warn)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;place-items:center;padding:24px;overflow:auto;z-index:9}
+.modal.on{display:grid}.modal img{max-width:min(1200px,100%);border-radius:12px}
+@media(max-width:980px){.kpis{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.meter{grid-template-columns:repeat(2,1fr)}.list{max-height:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">UT</div>
+    <div><h1>UI Test Agent</h1><div class="sub">Design-system conformance and flow testing · netOS</div></div>
+    <div class="spacer"></div>
+    <span class="pill" id="livepill"><span class="dot"></span><span id="livetxt">Idle</span></span>
+    <button class="icon" id="theme">Theme</button>
+  </header>
+  <div class="kpis" id="kpis"></div>
+  <div class="grid">
+    <div class="card list" id="list"></div>
+    <div class="card detail" id="detail"></div>
+  </div>
+</div>
+<div class="modal" id="modal"><img id="modalimg" alt=""></div>
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmtMs = (ms) => ms < 1000 ? `${ms} ms` : ms < 60000 ? `${(ms / 1000).toFixed(1)} s` : `${Math.floor(ms / 60000)}m ${Math.round(ms % 60000 / 1000)}s`;
+const fmtUsd = (v) => v === 0 ? '$0.00' : v < 0.01 ? `$${v.toFixed(5)}` : `$${v.toFixed(3)}`;
+const MODEL_COLOR = (m) => /jev/.test(m) ? 'var(--jev)' : /claude/.test(m) ? 'var(--claude)' : 'var(--brand)';
+let state = { runs: [], benchmark: null }, selected = null, filter = 'all', tab = 'findings', shot = null;
+
+try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; else if (matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.dataset.theme = 'dark'; } catch {}
+$('#theme').onclick = () => { const d = document.documentElement; d.dataset.theme = d.dataset.theme === 'dark' ? 'light' : 'dark'; try { localStorage.setItem('theme', d.dataset.theme); } catch {} };
+$('#modal').onclick = () => $('#modal').classList.remove('on');
+
+function kpis() {
+  const base = (r) => r.id.replace(/-\d{4}-\d\d-\d\dT.*/, '');
+  const latest = new Map();
+  for (const r of state.runs) if (!latest.has(base(r))) latest.set(base(r), r); // runs are newest-first: one per target
+  const runs = [...latest.values()].filter((r) => r.kind !== 'benchmark');
+  const findings = runs.flatMap((r) => r.findings);
+  const real = findings.filter((f) => f.verdict === 'real').length;
+  const judged = findings.filter((f) => f.verdict && f.verdict !== 'unjudged').length;
+  const ms = state.runs.reduce((s, r) => s + r.elapsedMs, 0);
+  const usd = state.runs.reduce((s, r) => s + r.usd, 0);
+  const b = state.benchmark;
+  const cells = [
+    ['Runs', state.runs.length, `${runs.length} distinct targets · ${state.runs.filter((r) => !r.done).length} running`],
+    ['Open findings', findings.length, judged ? `${real} confirmed real by Claude` : 'latest run per target · awaiting Claude verdict'],
+    ['Total time', fmtMs(ms), 'across all runs'],
+    ['Model cost', fmtUsd(usd), state.runs.some((r) => r.unpriced && r.stages.some((s) => s.model !== 'playwright' && s.model !== 'heuristic' && s.costUsd == null)) ? 'some calls unpriced' : 'deterministic checks are free'],
+    ['Benchmark', b ? `${b.caught}/${b.seeded}` : '–', b ? `${b.falsePositives.length} false positives · ${fmtMs(b.ms)}` : 'run npm run smoke']
+  ];
+  $('#kpis').innerHTML = cells.map(([l, v, n]) => `<div class="card kpi"><div class="l">${l}</div><div class="v">${esc(v)}</div><div class="n">${esc(n)}</div></div>`).join('');
+}
+
+function list() {
+  if (!state.runs.length) { $('#list').innerHTML = '<div class="empty">No runs yet.<br>Try <code>npm run smoke</code></div>'; return; }
+  $('#list').innerHTML = state.runs.map((r) => `<div class="run ${r.id === selected ? 'sel' : ''}" data-id="${esc(r.id)}">
+    <div class="t"><span class="tag ${r.kind}">${r.kind}</span>${esc(r.id.replace(/-\d{4}-\d\d-\d\dT.*/, ''))}${r.done ? '' : ' <span class="pill live" style="padding:1px 8px"><span class="dot"></span>live</span>'}</div>
+    <div class="m"><span>${fmtMs(r.elapsedMs)}</span><span>${fmtUsd(r.usd)}</span><span>${r.findings.length} findings</span></div></div>`).join('');
+  document.querySelectorAll('.run').forEach((e) => e.onclick = () => { selected = e.dataset.id; shot = null; render(); });
+}
+
+function detail() {
+  const r = state.runs.find((x) => x.id === selected);
+  if (!r) { $('#detail').innerHTML = '<div class="empty">Select a run</div>'; return; }
+  const pct = r.plannedSteps ? Math.min(100, Math.round(r.stages.length / r.plannedSteps * 100)) : (r.done ? 100 : 0);
+  const avg = r.stages.length ? r.elapsedMs / r.stages.length : 0;
+  const proj = !r.done && r.plannedSteps && r.stages.length ? Math.round(r.elapsedMs + avg * (r.plannedSteps - r.stages.length)) : null;
+  const maxMs = Math.max(1, ...r.stages.map((s) => s.ms));
+  const rules = [...new Set(r.findings.map((f) => f.rule))];
+  const shown = r.findings.filter((f) => filter === 'all' || f.rule === filter);
+  const esc_ = r.escalations || [];
+  const tabs = [['findings', `Findings (${r.findings.length})`], ['steps', `Steps (${r.steps.length})`], ['shots', `Screenshots (${r.shots.length})`], ['esc', `Escalations (${esc_.length})`]]
+    .filter(([k]) => k === 'findings' || k === 'esc' || (k === 'steps' && r.steps.length) || (k === 'shots' && r.shots.length));
+  if (!tabs.some(([k]) => k === tab)) tab = 'findings';
+  let body = '';
+  if (tab === 'findings') {
+    body = `<div class="chips"><span class="chip ${filter === 'all' ? 'on' : ''}" data-f="all">All ${r.findings.length}</span>${rules.map((x) => `<span class="chip ${filter === x ? 'on' : ''}" data-f="${esc(x)}">${esc(x)} ${r.findings.filter((f) => f.rule === x).length}</span>`).join('')}</div>` +
+      (shown.length ? `<table><thead><tr><th>Sev</th><th>Rule</th><th>Element</th><th>What we measured</th><th>Claude</th></tr></thead><tbody>${shown.map((f) => `<tr><td><span class="sev ${f.severity}">${f.severity}</span></td><td>${esc(f.rule)}</td><td class="el">${esc(f.element)}${f.mode && f.mode !== 'light' && f.mode !== 'flow' ? ` <span class="tag">${esc(f.mode)}</span>` : ''}</td><td>${esc(f.detail)}${f.fix ? `<div class="fix">Fix: ${esc(f.fix)}</div>` : ''}</td><td>${f.verdict ? `<span class="vd ${f.verdict}">${esc(f.verdict.replace('_', ' '))}</span>${f.reason ? `<div class="fix">${esc(f.reason)}</div>` : ''}` : '–'}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No findings</div>');
+  } else if (tab === 'steps') {
+    body = r.steps.map((s) => `<div class="step"><b>${s.n}</b><div>${esc(s.target)}<div class="fix">${s.skipped ? 'skipped by ' + esc(s.skipped) : esc(s.before) + ' → ' + esc(s.after)}${s.dialogOpened ? ' · dialog opened' : ''}${s.errors.length ? ' · ' + esc(s.errors[0]) : ''}</div></div><span class="tag">${esc(s.pickedBy)} ${s.confidence}</span><span class="${s.changed ? 'ok' : 'no'}">${s.skipped ? '⛔ skipped' : s.changed ? '✓ effect' : '● no effect'}</span></div>`).join('');
+  } else if (tab === 'shots') {
+    body = `<div class="shots">${r.shots.map((f) => `<div><img loading="lazy" src="/runs/${encodeURIComponent(r.id)}/${encodeURIComponent(f)}" data-src="/runs/${encodeURIComponent(r.id)}/${encodeURIComponent(f)}" alt="${esc(f)}"><div class="sub">${esc(f)}</div></div>`).join('')}</div>`;
+  } else {
+    body = esc_.length ? `<table><thead><tr><th>When</th><th>Event</th><th>From → to</th><th>Detail</th></tr></thead><tbody>${esc_.map((e) => `<tr><td>${esc(e.at?.slice(11, 19))}</td><td>${esc(e.event)}</td><td>${esc(e.from)} → ${esc(e.to || '')}</td><td>${esc(e.reason || (e.confidence != null ? 'confidence ' + e.confidence : ''))}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">No escalations or fallbacks in this run.<br>When the cheap picker is unsure or an API fails, it is logged here.</div>';
+  }
+  $('#detail').innerHTML = `<div class="dh"><div><h2>${esc(r.id.replace(/-\d{4}-\d\d-\d\dT.*/, ''))}</h2><div class="sub">${esc(r.url || '')}</div></div><div class="spacer"></div>${r.status === 'not_run' ? '<span class="tag" style="color:var(--bad)">not run</span>' : r.done ? '<span class="tag">done</span>' : `<span class="pill live"><span class="dot"></span>${esc(r.running)}</span>`}</div>
+    <div class="meter">
+      <div class="mbox"><div class="l">Elapsed</div><div class="v">${fmtMs(r.elapsedMs)}</div><div class="n">${proj ? 'projected ' + fmtMs(proj) : r.done ? 'finished' : ''}</div></div>
+      <div class="mbox"><div class="l">Spent</div><div class="v">${fmtUsd(r.usd)}</div><div class="n">${r.unpriced ? r.stages.filter((s) => s.costUsd == null).length + ' unpriced calls' : 'model tokens only'}</div></div>
+      <div class="mbox"><div class="l">Stages</div><div class="v">${r.stages.length}${r.plannedSteps ? ' / ' + r.plannedSteps : ''}</div><div class="bar" style="margin-top:6px"><i style="width:${pct}%"></i></div></div>
+      <div class="mbox"><div class="l">Avg / stage</div><div class="v">${fmtMs(Math.round(avg))}</div><div class="n">${r.stages.filter((s) => /jev|claude/.test(s.model)).length} model calls</div></div>
+    </div>
+    ${r.status === 'not_run' ? `<div class="mbox" style="border-color:var(--bad);margin-bottom:12px"><b style="color:var(--bad)">NOT RUN</b><div class="n" style="font-size:13px;color:var(--text)">${esc(r.problem)}</div></div>` : ''}
+    <h3>Timeline</h3>
+    <div class="tl">${r.stages.map((s) => `<div class="row"><span class="name" title="${esc(s.target || s.stage)}">${esc(s.stage)}</span><div><div class="b" style="width:${Math.max(1, s.ms / maxMs * 100)}%;background:${MODEL_COLOR(s.model)}"></div></div><span>${fmtMs(s.ms)} · ${s.costUsd == null ? 'unpriced' : fmtUsd(s.costUsd)}</span></div>`).join('')}</div>
+    <div class="legend"><span><b style="background:var(--brand)"></b>Playwright (free)</span><span><b style="background:var(--jev)"></b>Jev</span><span><b style="background:var(--claude)"></b>Claude</span></div>
+    <h3>${tabs.map(([k, l]) => `<span class="chip ${k === tab ? 'on' : ''}" data-t="${k}" style="margin-right:6px;text-transform:none;letter-spacing:0">${l}</span>`).join('')}</h3>
+    ${body}`;
+  document.querySelectorAll('[data-f]').forEach((e) => e.onclick = () => { filter = e.dataset.f; detail(); });
+  document.querySelectorAll('[data-t]').forEach((e) => e.onclick = () => { tab = e.dataset.t; detail(); });
+  document.querySelectorAll('.shots img').forEach((e) => e.onclick = () => { $('#modalimg').src = e.dataset.src; $('#modal').classList.add('on'); });
+}
+
+function render() {
+  kpis(); list(); detail();
+  const live = state.runs.some((r) => !r.done && Date.now() - r.mtime < 120000);
+  $('#livepill').className = 'pill' + (live ? ' live' : '');
+  $('#livetxt').textContent = live ? 'Run in progress' : 'Idle';
+}
+async function poll() {
+  try {
+    const s = await (await fetch('/api/state')).json();
+    const first = !state.runs.length;
+    const key = JSON.stringify(s.runs.map((r) => [r.id, r.stages.length, r.done, r.findings.length]));
+    const changed = key !== state._key;
+    state = { ...s, _key: key };
+    if (first || !state.runs.some((r) => r.id === selected)) selected = state.runs[0]?.id ?? null;
+    if (changed) render();
+    else if (state.runs.some((r) => !r.done)) { kpis(); }
+  } catch {}
+  setTimeout(poll, 1000);
+}
+poll();
+</script>
+</body>
+</html>

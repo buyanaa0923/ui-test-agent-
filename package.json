@@ -1,0 +1,38 @@
+{
+  "name": "ui-test-agent",
+  "version": "0.2.0",
+  "description": "Frontend UI testing agent: deterministic design-system checks, Jev + Claude cascade, measured.",
+  "main": "index.js",
+  "scripts": {
+    "test": "UTA_NO_DOTENV=1 node --test test/*.test.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "scan": "node scripts/scan.mjs",
+    "flow": "node scripts/flow.mjs",
+    "dashboard": "node scripts/serve.mjs",
+    "import-tokens": "node scripts/import-tokens.mjs",
+    "bench": "node scripts/bench.mjs",
+    "determinism": "node scripts/determinism.mjs",
+    "jev:ping": "node scripts/jev-ping.mjs",
+    "eval:jev": "node scripts/eval-jev.mjs",
+    "eval:replay": "node scripts/eval-jev.mjs --replay",
+    "jev:raw": "node scripts/jev-raw.mjs",
+    "evidence": "node scripts/evidence.mjs",
+    "scorecard": "node scripts/scorecard-export.mjs",
+    "setup": "bash setup.sh",
+    "doctor": "node scripts/doctor.mjs",
+    "real:collect": "node scripts/collect-real.mjs",
+    "real:labels": "node scripts/real-labels.mjs",
+    "eval:real": "node scripts/eval-real.mjs",
+    "eval:real:replay": "node scripts/eval-real.mjs --replay"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "playwright": "^1.63.0"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}
