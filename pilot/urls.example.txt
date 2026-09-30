@@ -1,0 +1,10 @@
+# Pages the pipeline stage checks. Copy to pilot/urls.txt and edit. One URL per line, # starts a comment.
+# Start with one module. Pages behind login need --storage-state (see docs/PILOT.md).
+
+# NetOS shell (works without login on the dev harness)
+http://localhost:5200/dashboard
+http://localhost:5200/admin/registry
+
+# netwrk-web, mounted in the shell (needs the :5300 dev server running)
+http://localhost:5200/apps/netwrk-web/sales
+http://localhost:5200/apps/netwrk-web/branch

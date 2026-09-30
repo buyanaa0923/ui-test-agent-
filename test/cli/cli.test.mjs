@@ -84,3 +84,11 @@ test('ci reads a URL list file, skips comments and blanks, and refuses to run wi
   assert.equal(r.code, 0); assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'e', 'summary.json'), 'utf8')).totals.pages, 1);
   assert.equal((await mole(['ci'])).code, 64);
 });
+
+test('ci --result-line ends with the RESULT line a Hefesto stage runner reads; success only on exit 0', async () => {
+  const evid = tmpDir('mole-res-');
+  const run = async (urls, name) => { const r = await mole(['ci', ...urls.flatMap((u) => ['--url', u]), '--no-model', '--plain', '--result-line', '--out', path.join(evid, name)]); return { ...r, last: r.out.trim().split('\n').at(-1) }; };
+  const ok = await run([fixture('clean.html')], 'ok'); assert.equal(ok.code, 0); assert.match(ok.last, /^RESULT: success=true summary=mole 1 page\(s\): 1 clean, 0 with defects, 0 not run/);
+  const bad = await run([fixture('sample.html')], 'bad'); assert.equal(bad.code, 1); assert.match(bad.last, /^RESULT: success=false summary=.*1 with defects/);
+  const down = await run([fixture('clean.html'), 'http://127.0.0.1:9/'], 'down'); assert.equal(down.code, 2); assert.match(down.last, /^RESULT: success=false .*1 not run/);
+});
