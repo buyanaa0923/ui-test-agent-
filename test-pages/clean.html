@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Clean page (fixture: no rule should fire, and the button visibly does something)</title>
+<style>
+  body { font-family: Inter, sans-serif; color: #111827; background: #ffffff; margin: 24px; }
+  h1 { font-size: 24px; margin: 0 0 12px; }
+  p { font-size: 14px; margin: 0 0 12px; }
+  label { display: block; font-size: 14px; margin-bottom: 4px; }
+  input { font-family: Inter, sans-serif; font-size: 14px; height: 36px; padding: 0 8px; border: 1px solid #9ca3af; border-radius: 8px; }
+  button { font-family: Inter, sans-serif; font-size: 14px; height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #0f766e; color: #ffffff; font-weight: 700; }
+</style>
+</head>
+<body>
+  <h1>Loan application</h1>
+  <p>Fill in your details and continue.</p>
+  <label for="name">Full name</label>
+  <input id="name" type="text">
+  <p id="status" role="status"></p>
+  <button id="go" type="button" onclick="document.getElementById('status').textContent='Saved'">Continue</button>
+</body>
+</html>
