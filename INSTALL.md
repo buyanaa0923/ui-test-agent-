@@ -72,6 +72,30 @@ Mole is in active testing and every push is a new version:
 In `/plugin` > **Installed** > **mole**, choose **Update now**, then `/reload-plugins`. (From a shell:
 `claude plugin marketplace update mole` then `claude plugin update mole@mole`.)
 
+## Install from a local folder (testing unreleased changes)
+
+Clone or copy the repository, run `npm ci` in it once, then in Claude Code:
+
+```text
+/plugin marketplace add D:/path/to/ui-test-agent-
+/plugin install mole@mole
+```
+
+A plugin added from a local folder runs from that folder: after a code change, `/reload-plugins` is enough.
+
+## Troubleshooting
+
+| Symptom | Fix |
+| :- | :- |
+| `/mole:...` commands do not appear | `/reload-plugins`, or restart Claude Code |
+| "NOT RUN" | nothing was tested: the app is not running at that URL, is still starting, or shows a login page. Start it (`npm run dev`) and try again |
+| Browser does not launch | install Google Chrome or Microsoft Edge, or run `npx playwright install chromium` |
+| "no DESIGN.md found" | not an error: only modern-web best practice was checked. Run `/mole:design` |
+| Font or colour findings everywhere | the `DESIGN.md` lists values the site does not really use: correct them there (ask Claude to re-check it against the code) |
+| A location points to the wrong file | medium / low confidence locations list `alternatives`; Claude checks them before editing |
+
+Anything else: `/mole:doctor` names the problem and the fix.
+
 ## Remove
 
 ```text

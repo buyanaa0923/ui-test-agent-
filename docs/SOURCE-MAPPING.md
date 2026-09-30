@@ -62,7 +62,7 @@ listed in `alternatives`. Under a score of 5 there is no location at all: Mole s
 ## The root
 
 `--src <folder>` (MCP `root`), else `MOLE_SRC_ROOT`, else the project that holds the `DESIGN.md` (the nearest folder
-with a `package.json` or `.git`), else the working directory. `--src none` switches it off. `node_modules`, build output
+with a `package.json` or `.git`), else the project Claude Code is open in (the plugin passes it), else the working directory. `--src none` switches it off. `node_modules`, build output
 (`dist`, `build`, `.next`, ...), `runs/` and files over 512 KB are skipped. The index stops after 8000 files or 4 seconds, and the
 run says so in a note. A home folder or a drive root is never indexed.
 

@@ -1,13 +1,16 @@
 # Running this on a new machine (work Mac)
 
+For use inside Claude Code, installing the plugin is simpler: [`INSTALL.md`](../INSTALL.md). This page is the terminal
+setup, with the NetOS / Hefesto specifics.
+
 About 10 minutes. Nothing here needs the personal machine, the personal Claude account, or any old key.
 
 ## 1. Get the folder onto the machine
-Unzip `ui-test-agent-mvp.zip` (or clone the company GitLab repo once it exists). The zip has no keys, no `node_modules`, no old run results.
+Clone the repository (`git clone https://github.com/buyanaa0923/ui-test-agent-.git`) or unzip a copy. Neither contains keys, `node_modules` or old run results.
 
 ## 2. Set up
 ```bash
-cd ui-test-agent
+cd ui-test-agent-
 bash setup.sh
 ```
 This installs dependencies, downloads Playwright's Chromium (if the download is blocked it falls back to an installed Google Chrome or Edge), creates `.env`, and runs `npm run doctor`.
@@ -18,7 +21,7 @@ This installs dependencies, downloads Playwright's Chromium (if the download is 
 | `TYPESAFE_API_KEY` | TypeSafe console: the key issued to you or the team |
 | `ANTHROPIC_API_KEY` | The **work** Anthropic Console (Settings, API keys). A Claude chat/Code subscription does not include API access. |
 
-Without a Claude key, set `JUDGE_MODE=cli` to use the company `claude -p` runner instead (costs then show as "unpriced").
+Without a Claude key, set `JUDGE_MODE=cli` to use your own Claude Code login through `claude -p` instead (costs then show as "unpriced").
 With neither key, the deterministic design checks still run; the model steps are skipped and say so.
 
 ## 4. Check the machine

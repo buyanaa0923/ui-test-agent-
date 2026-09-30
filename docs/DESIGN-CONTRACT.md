@@ -7,7 +7,8 @@ Mole checks a page against a **design contract**: what "correct" means for this 
 3. the project's own **`DESIGN.md`**: later values win, maps merge key by key, lists replace.
 
 Where Mole looks: `--design <file>` (MCP: `design`), else `MOLE_DESIGN`, else `DESIGN.md`, `design.md`, `.mole/design.md`,
-`docs/DESIGN.md` in the working directory, else the built-in NetOS contract. Every run prints which contract it used and
+`docs/DESIGN.md` in the project folder (the one Claude Code is open in, or the working directory), else the built-in
+`modern-web` pack alone: best practice only, no brand values. NetOS apps write `extends: netos`. Every run prints which contract it used and
 stamps its hash into `report.json`, so a result can always be traced to the exact rules that produced it.
 
 ## The file
@@ -33,7 +34,7 @@ people (and later for a model's taste review); it never drives a rule.
 | `spacing` | padding and gaps on this grid (px); opt-in | `4` |
 | `contrast` | `normal` and `large` ratios | `{ normal: 4.5, large: 3 }` |
 | `input-zoom` | the iOS 16px input rule on mobile (default on) | `false` |
-| `ignore` | selectors out of scope; `.x-*` = any class starting with `x-` | `[".ant-*", "#legacy"]` |
+| `ignore` | selectors out of scope; `x-*` or `.x-*` = any class starting with `x-` | `["ant-*", "#legacy"]` |
 | `rules` | switch a rule off or set its severity | `{ line-length: off, contrast: high }` |
 
 Any number can be one value or `{ desktop, mobile }`. The block is a small YAML subset (maps, lists, `[a, b]`, `{ a: 1 }`,

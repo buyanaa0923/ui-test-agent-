@@ -11,7 +11,7 @@ facts; a **Jev → Claude → human** ladder judges them, so the fast cheap mode
 only sees the doubtful ones. Every run is timed, costed and replayable.
 
 ```bash
-mole dig http://localhost:5200/dashboard            # what's wrong on this page?
+mole dig http://localhost:3000                      # what's wrong on this page?
 mole dig <url> --watch                              # the same, in a real browser, live
 mole dig <url> --platform mobile                    # the phone layout: 44px targets, 16px body text, iOS zoom
 mole tunnel <url>                                   # do its buttons actually work?
@@ -43,7 +43,8 @@ Calm, dense data screens for analysts.
 
 The block is what Mole measures; the prose is for people. `mole design init` writes a starter, `/mole:design` in Claude
 Code drafts it from your Tailwind config and tokens, and `mole design show` prints exactly what will be enforced. Without
-a `DESIGN.md`, Mole uses the built-in NetOS contract and says so on every run. Full reference:
+a `DESIGN.md`, Mole checks modern-web best practice only (no brand fonts, colours or sizes) and says so on every run;
+NetOS apps write `extends: netos`. Full reference:
 [`docs/DESIGN-CONTRACT.md`](docs/DESIGN-CONTRACT.md).
 
 ## Every defect points at its source
@@ -63,8 +64,9 @@ rather than a guess. [`docs/SOURCE-MAPPING.md`](docs/SOURCE-MAPPING.md).
 
 ![mole dig in the terminal](docs/assets/scan-live.png)
 
-**In the browser** (`--watch`): a laser sweeps the page as every element is checked, green boxes pass, red boxes are defects
-with the rule on them, and the mole keeps a running feed of who decided what.
+**In the browser** (`--watch`, and by default when Claude runs it): the page stays at its real size and Mole measures it
+screen by screen with a laser pass, then tours the results screen by screen: green boxes were measured, red boxes are
+defects with the rule on them, and the panel keeps a running feed of who decided what (rule, Jev, Claude).
 
 ![mole overlay while digging](docs/assets/overlay-dig.png)
 
@@ -96,28 +98,21 @@ mole dig http://localhost:3000
 
 No keys? Mole still runs every deterministic check for free (`--no-model`). With both keys it uses the ladder by default.
 
-## Use it from Claude Code
+## What you get in Claude Code
 
-This repository is a Claude Code plugin **and** an MCP server:
-
-```text
-/plugin marketplace add <path-or-git-url-of-this-repo>
-/plugin install mole@mole
-```
-
-| You get | What it does |
+| | What it does |
 | :- | :- |
-| `/mole:dig <url> [mobile] [fix]` | scan a page with the live Mole panel on screen; with `fix`, Claude fixes the defects and re-digs to prove it |
+| `/mole:dig <url> [mobile] [fix]` | scan a page with the live Mole panel on screen; with `fix`, Claude fixes the defects and re-checks to prove it |
 | `/mole:design` | draft this project's `DESIGN.md` from its tokens / Tailwind config |
 | `/mole:tunnel <url>` | click through controls, report dead buttons / JS errors / failed requests |
-| `/mole:watch <url> [record]` | open the live browser view (great for showing someone); `record` saves a video |
+| `/mole:watch <url> [record]` | the live browser view for showing someone; `record` saves a video |
 | `/mole:doctor` | is this machine ready? |
-| MCP tools `mole_dig` `mole_tunnel` `mole_doctor` `mole_report` | Claude calls them itself after changing UI; `watch: true` opens the live panel on your screen, `design` / `platform` pick the contract; every finding comes with its source (WCAG, HIG, your design) and a fix hint |
-| the `mole` skill | teaches Claude when to test, the find → fix → re-dig loop, and that **NOT RUN is never a pass** |
+| MCP tools `mole_dig` `mole_tunnel` `mole_doctor` `mole_report` | Claude calls them itself after changing UI; the project, its `DESIGN.md` and its source are found automatically; every finding comes with its measurement, source (WCAG, HIG, your design), fix hint and `file:line` |
+| the `mole` skill | teaches Claude when to test, the find → fix → re-check loop, and that **NOT RUN is never a pass** |
 
-Set `MOLE_WATCH=1` to make every Claude-initiated run show the panel; `MOLE_HEADLESS=1` never opens a window (CI).
-
-Without the plugin: `claude mcp add mole -- node /path/to/repo/bin/mole.mjs mcp`.
+Settings (panel on/off, Jev key, Claude second opinion) are asked when the plugin is enabled and live in `/plugin` >
+Installed > mole > Configure options; keys go to the OS keychain. Without the plugin:
+`claude mcp add mole -- node /path/to/repo/bin/mole.mjs mcp`.
 
 ## How it decides
 
@@ -154,11 +149,11 @@ npm test               # every test, no keys needed (model calls are mocked)
 npm run evidence       # tests + mutation benchmark + determinism + smoke
 ```
 
-Measured on this repository (see `docs/internal/WORK-STATUS.md` for real-app findings and their honest limits):
+Measured on this repository on 2026-09-30 (see `docs/internal/WORK-STATUS.md` for real-app findings and their honest limits):
 
 | What | Result |
 | :- | :- |
-| tests | 160+ passing, including "the benchmark can fail" (sabotaged rules must be caught) |
+| tests | 195 passing (no keys needed), including "the benchmark can fail" (sabotaged rules must be caught) |
 | mutation benchmark | 220 generated pages, one injected defect each: precision 1, recall 1, exact-match 100%, 0.0% false positives on clean pages |
 | determinism | 11/11 pages identical across 20 fresh runs |
 | seeded-bug smoke | 11/11 caught |
