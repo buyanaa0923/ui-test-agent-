@@ -32,6 +32,7 @@ export default {
     urls: { type: 'string', description: 'file with one URL per line (# comments allowed)' },
     url: { type: 'string', multiple: true, description: 'a URL to test (repeatable)' },
     out: { type: 'string', description: 'evidence folder (default evidence/runs/mole-<timestamp>)' },
+    'result-line': { type: 'boolean', description: 'end with one line `RESULT: success=<true|false> summary=...` (the format Hefesto stage runners read); success is true only on exit 0' },
     tunnel: { type: 'boolean', description: 'also click through each page (dead buttons, JS errors, failed requests)' },
     max: { type: 'string', default: '12', description: 'maximum clicks per page when --tunnel is set' },
     'allow-origin': { type: 'string', multiple: true, description: 'let requests to this origin through (repeatable)' },
@@ -80,6 +81,12 @@ export default {
       const paint = exitCode === 0 ? t.pass : exitCode === 1 ? t.fail : t.warn;
       out(`\n  ${paint(t.bold(exitCode === 0 ? 'SURFACED · all pages clean' : exitCode === 1 ? `NUGGETS FOUND · ${summary.totals.findings} defects on ${summary.totals.withDefects} page${summary.totals.withDefects === 1 ? '' : 's'}` : `CAVE-IN · ${summary.totals.notRun} page${summary.totals.notRun === 1 ? '' : 's'} not tested (this is a failure)`))}`);
       out(`  ${t.mute(`exit ${exitCode} · ${fmtMs(summary.totals.totalMs)} · ${fmtUsd(summary.totals.totalUsd)} · evidence: ${evidenceDir}`)}\n`);
+    }
+    if (values['result-line'] && !json) {
+      const tt = summary.totals;
+      const why = exitCode === 0 ? 'all pages clean' : exitCode === 1 ? `${tt.findings} defect(s) on ${tt.withDefects} page(s)` : `${tt.notRun} page(s) not tested (not run counts as failure)`;
+      process.stdout.write(`RESULT: success=${exitCode === 0} summary=mole ${tt.pages} page(s): ${tt.clean} clean, ${tt.withDefects} with defects, ${tt.notRun} not run; ${why}; evidence ${evidenceDir}
+`);
     }
     return exitCode;
   },
