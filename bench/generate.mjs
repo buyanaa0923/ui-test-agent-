@@ -1,6 +1,6 @@
 // Seeded generator of test pages: clean design-system-conformant components, plus exactly one injected defect per case.
 // Ground truth is known by construction: expected key = "<id>|<rule>". Same seed => same pages, so anyone can reproduce a number.
-import { contrastRatio } from '../src/design-checks.mjs';
+import { contrastRatio } from '../src/engine/design-checks.mjs';
 
 export function rng(seed) {
   let a = seed >>> 0;

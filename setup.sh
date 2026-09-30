@@ -18,4 +18,4 @@ say "Settings"
 if [ ! -f .env ]; then cp .env.example .env && echo "Created .env. Open it and paste your keys (never share them in chat or commit them)."; else echo ".env already exists, left untouched."; fi
 
 say "Check"
-node scripts/doctor.mjs
+node bin/mole.mjs doctor
