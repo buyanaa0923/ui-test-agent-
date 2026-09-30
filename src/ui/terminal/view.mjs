@@ -20,6 +20,13 @@ function pipeline(t, s, frame) {
   return s.steps.map((x) => `${stepGlyph(t, x, frame)} ${x.status === 'wait' ? t.faint(x.label) : x.label}${x.ms != null ? t.mute(' ' + fmtMs(x.ms)) : ''}`).join(t.faint(`  ${t.sym.arrow}  `));
 }
 
+// The modes that were really checked; a skipped one (no dark mode on the page) says so.
+const modesText = (s) => {
+  const skipped = s.skippedModes || [];
+  const ran = s.modes.filter((m) => !skipped.includes(m));
+  return `${ran.join(' + ') || 'none'}${skipped.length ? ` (${skipped.join(', ')} skipped: not on this page)` : ''}`;
+};
+
 function headerLines(t, s, o) {
   const running = s.phase !== 'done' && s.phase !== 'not_run';
   const verb = s.command === 'tunnel' ? 'tunnelling through controls' : 'digging up UI bugs';
@@ -53,7 +60,7 @@ function ladderLines(t, s, o) {
   const lab = (who, name) => t.by(who, t.bold(padEnd(name, 8)));
   const out = [''];
   if (s.command === 'tunnel') out.push(` ${lab('rule', 'FOUND')} ${t.bold(String(total))} problem${total === 1 ? '' : 's'} while clicking ${t.mute('(dead buttons, JS errors, failed requests)')}`);
-  else out.push(` ${lab('rule', 'RULES')} ${t.bold(String(total))} distinct nugget${total === 1 ? '' : 's'} flagged by ${t.mute('11 deterministic checks')}${s.findings.length !== total ? t.mute(` (${s.findings.length} across ${s.modes.join(' + ')})`) : ''}`);
+  else out.push(` ${lab('rule', 'RULES')} ${t.bold(String(total))} distinct nugget${total === 1 ? '' : 's'} flagged by ${t.mute('deterministic checks')}${s.findings.length !== total ? t.mute(` (${s.findings.length} across ${modesText(s)})`) : ''}`);
   if (s.triage === 'cascade') {
     const p50 = median(s.jev.ms);
     out.push(` ${lab('jev', 'JEV')} ${bar(t, total ? s.jev.settled / total : 0, 16, 'jev')} ${padStart(String(s.jev.settled), 2)}/${total} settled${s.jev.unsure ? t.warn(`  ${s.jev.unsure} unsure ${t.sym.up}`) : ''}${p50 != null ? t.mute(`  p50 ${fmtMs(p50)}`) : ''}  ${t.mute(fmtUsd(s.jev.usd))}`);
@@ -148,7 +155,7 @@ export function verdictLines(s, t, o = {}) {
   const e = s.end || { status: 'pass', exitCode: 0, totalMs: 0, totalUsd: 0 };
   const uniq = uniqueCounted(s).length, raw = counted(s).length;
   const head = e.status === 'not_run' ? { txt: 'CAVE-IN  ·  NOT RUN', c: 'warn', sub: 'Nothing was tested. This is a failure, not a pass.' }
-    : e.status === 'defects' ? { txt: `NUGGETS FOUND  ·  ${uniq} defect${uniq === 1 ? '' : 's'}`, c: 'fail', sub: raw !== uniq ? `Real bugs dug up (${raw} findings across ${s.modes.join(' + ')}). Fix them and dig again.` : 'Real bugs dug up. Fix them and dig again.' }
+    : e.status === 'defects' ? { txt: `NUGGETS FOUND  ·  ${uniq} defect${uniq === 1 ? '' : 's'}`, c: 'fail', sub: raw !== uniq ? `Real bugs dug up (${raw} findings across ${modesText(s)}). Fix them and dig again.` : 'Real bugs dug up. Fix them and dig again.' }
       : { txt: 'SURFACED  ·  CLEAN', c: 'pass', sub: 'No defects found in what was tested.' };
   const paint = (x) => t[head.c](x);
   const side = paint(t.unicode ? '│' : '|');
@@ -164,7 +171,7 @@ export function verdictLines(s, t, o = {}) {
     const d = decidedBy(s);
     if (s.triage === 'cascade' && s.findings.length) out.push(row(`${lab('Decided by')}${t.by('jev', `Jev ${d.jev}`)}${t.mute('  ·  ')}${t.by('claude', `Claude ${d.claude}`)}${t.mute('  ·  ')}${t.by('human', `person ${d.human}`)}${d.dismissed ? t.mute(`  ·  ${d.dismissed} dismissed`) : ''}`));
     if (s.command === 'tunnel' && e.coverage) out.push(row(`${lab('Coverage')}${e.coverage.exercised}/${e.coverage.controlsFound} controls clicked${e.coverage.skippedByRiskScreen ? t.mute(` · ${e.coverage.skippedByRiskScreen} skipped by risk screen`) : ''}`), row(`${lab('')}${t.mute(`stopped: ${e.coverage.stopReason}`)}`));
-    if (s.command === 'dig') out.push(row(`${lab('Checked')}${s.elements} elements · ${s.modes.join(' + ')}`));
+    if (s.command === 'dig') out.push(row(`${lab('Checked')}${s.elements} elements · ${modesText(s)}`));
   }
   const floor = claudeOnlyFloorUsd(s);
   const saving = floor && e.totalUsd < floor ? t.mute(`  (Claude-only: ≥ ${fmtUsd(floor)})`) : '';

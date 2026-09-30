@@ -91,4 +91,5 @@ test('legacy tokens.json callers keep exactly the original design-system rules a
 test('ignore patterns: class prefixes expand, plain selectors pass through', () => {
   assert.equal(toSelector('.ant-*'), '[class^="ant-"],[class*=" ant-"]');
   assert.equal(toSelector('div.legacy > span'), 'div.legacy > span');
+  assert.equal(toSelector('maplibregl-*'), '[class^="maplibregl-"],[class*=" maplibregl-"]', 'a bare prefix pattern is a class prefix too');
 });

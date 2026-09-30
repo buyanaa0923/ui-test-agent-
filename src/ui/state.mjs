@@ -33,7 +33,7 @@ export function reduce(s, e) {
   const st = { ...s, t: e.t ?? s.t };
   switch (e.type) {
     case 'run.start':
-      return { ...st, command: e.command, url: e.url, runId: e.runId, runDir: e.runDir, triage: e.triage || 'none', picker: e.picker || null, riskScreen: !!e.riskScreen, max: e.max ?? null, modes: e.modes || [], contract: e.contract || null, phase: 'loading', startedAt: e.t ?? 0,
+      return { ...st, command: e.command, url: e.url, runId: e.runId, runDir: e.runDir, triage: e.triage || 'none', picker: e.picker || null, riskScreen: !!e.riskScreen, max: e.max ?? null, modes: e.modes || [], skippedModes: [], contract: e.contract || null, phase: 'loading', startedAt: e.t ?? 0,
         steps: e.command === 'dig'
           ? [{ id: 'load', label: 'Dig in', status: 'run' }, ...(e.modes || []).map((m) => ({ id: m, label: m === 'dark' ? 'Dark' : m === 'light' ? 'Light' : m, status: 'wait' })), ...(e.triage && e.triage !== 'none' ? [{ id: 'judge', label: 'Sniff', status: 'wait' }] : [])]
           : [{ id: 'load', label: 'Dig in', status: 'run' }, { id: 'tunnel', label: 'Tunnel', status: 'wait' }] };
@@ -45,7 +45,7 @@ export function reduce(s, e) {
     case 'mode.done': {
       const next = st.modes[st.modes.indexOf(e.mode) + 1];
       const isLast = !next;
-      return { ...st, elements: Math.max(st.elements, e.elements), steps: setStep(isLast && st.triage !== 'none' ? setStep(st.steps, 'judge', { status: 'run' }) : next ? setStep(st.steps, next, { status: 'run' }) : st.steps, e.mode, { status: 'ok', detail: `${e.elements} checked · ${e.findings} nugget${e.findings === 1 ? '' : 's'}` }),
+      return { ...st, skippedModes: e.skipped ? [...(st.skippedModes || []), e.mode] : st.skippedModes || [], elements: Math.max(st.elements, e.elements), steps: setStep(isLast && st.triage !== 'none' ? setStep(st.steps, 'judge', { status: 'run' }) : next ? setStep(st.steps, next, { status: 'run' }) : st.steps, e.mode, { status: 'ok', detail: e.skipped ? 'skipped: no dark mode' : `${e.elements} checked · ${e.findings} nugget${e.findings === 1 ? '' : 's'}` }),
         phase: isLast && st.triage !== 'none' ? 'judging' : st.phase };
     }
     case 'finding':

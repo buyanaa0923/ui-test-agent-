@@ -76,7 +76,8 @@ test('dig end to end: every finding on the rendered page points at the component
 test('dig without a root searches the working directory (here: this repository and its fixtures)', async () => {
   const r = await dig({ url: fixture('sample.html'), name: 't-locate-cwd', modes: ['light'] });
   const f = r.findings.find((x) => x.key === 'hint|contrast');
-  assert.equal(at(f.where), 'test-pages/sample.html:52'); assert.equal(f.where.confidence, 'high');
+  const line = fs.readFileSync(path.join(ROOT, 'test-pages', 'sample.html'), 'utf8').split(/\r?\n/).findIndex((l) => l.includes('id="hint"')) + 1;
+  assert.equal(at(f.where), `test-pages/sample.html:${line}`); assert.equal(f.where.confidence, 'high');
 });
 
 // ---- page-aware: a Next.js App Router project (test-pages/locate-next) ------------------------------------------------

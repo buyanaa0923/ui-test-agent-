@@ -104,3 +104,17 @@ test('tunnel NOT RUN when the page is down', async () => {
   const r = await tunnel({ url: 'http://127.0.0.1:9/', name: 't-tunnel-down' });
   assert.equal(r.exitCode, 2); assert.equal(r.status, 'not_run');
 });
+
+test('a tall page is measured screen by screen at the real window size: 100vh stays one screen, content far below is found', async () => {
+  const bus = new EventBus();
+  const r = await dig({ url: fixture('tall.html'), name: 't-tall' }, { bus });
+  assert.ok(r.findings.some((f) => f.key === 'deep-faint|contrast'), 'text 3000px down is measured, background read from the real layers');
+  const done = bus.history.filter((e) => e.type === 'mode.done');
+  assert.ok(done[0].screens >= 4, `several screens (${done[0].screens})`);
+  const measured = bus.history.filter((e) => e.type === 'screen.measured');
+  assert.equal(measured.length, done[0].screens); assert.ok(measured.every((e) => e.checked.every((c) => c.y > -800 && c.y < 1600)), 'overlay rects are window coordinates of that screen');
+  const rep = JSON.parse(fs.readFileSync(path.join(r.runDir, 'report.json'), 'utf8'));
+  assert.deepEqual(rep.viewport, { width: 1280, height: 800, mobile: false }, 'the viewport is never stretched');
+  assert.equal(done[1].skipped?.startsWith('no dark mode'), true, 'no dark mode here: dark is skipped, not checked twice');
+  assert.ok(r.findings.every((f) => f.mode === 'light'));
+});

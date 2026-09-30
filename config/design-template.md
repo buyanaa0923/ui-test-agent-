@@ -22,7 +22,8 @@ radius: [0, 4, 8, 12, 9999]
 # spacing: 4                 # every padding and gap on a 4px grid
 # targets: { desktop: 24, mobile: 44 }
 
-# Out of scope: third-party widgets you do not style ("ant-*" matches every class starting with ant-).
+# Out of scope: third-party widgets you do not style. "ant-*" (or ".ant-*") = every class starting with ant-;
+# any CSS selector works too, e.g. "#legacy-widget".
 ignore: []
 
 # Switch a rule off or change its severity: off | low | medium | high

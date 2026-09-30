@@ -18,7 +18,8 @@ export function createServer({ input = process.stdin, output = process.stdout, o
   const say = (e) => {
     switch (e.type) {
       case 'page.loaded': return `loaded ${e.elements} elements`;
-      case 'mode.done': return `${e.mode}: ${e.findings} nugget${e.findings === 1 ? '' : 's'} in ${e.elements} elements`;
+      case 'mode.done': return e.skipped ? `${e.mode} skipped: ${e.skipped}` : `${e.mode}: ${e.findings} nugget${e.findings === 1 ? '' : 's'} in ${e.elements} elements`;
+      case 'screen.measured': return `measuring screen ${e.index + 1} (${e.elements} elements)`;
       case 'decision': return e.kind === 'triage' && e.by ? `${e.by}: ${e.decision}${e.confidence != null ? ` ${Math.round(e.confidence * 100)}%` : ''}` : null;
       case 'control.pick': return `#${e.n} ${e.role} "${e.label}" (${e.by})`;
       case 'run.result': return e.status === 'pass' ? 'surfaced: clean' : e.status === 'defects' ? `nuggets found: ${e.findings}` : 'not run';

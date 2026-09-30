@@ -88,6 +88,7 @@ export function parseYaml(text) {
       const m = l.text.match(/^("[^"]+"|'[^']+'|[^:]+?)\s*:(\s+(.*)|$)/);
       if (!m) throw new Error(`line ${l.no}: expected "key: value", got "${l.text}"`);
       const key = m[1].replace(/^["']|["']$/g, '');
+      if (Object.hasOwn(map, key)) throw new Error(`line ${l.no}: "${key}" is set twice; keep one`);
       const rest = (m[3] || '').trim();
       if (rest !== '') map[key] = value(rest, l.no);
       else if (i < lines.length && lines[i].indent > indent) map[key] = block(lines[i].indent);
