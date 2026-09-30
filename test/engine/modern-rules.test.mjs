@@ -29,8 +29,9 @@ test('mobile: phone viewport, 44px targets, 16px body text and the iOS input-zoo
   const r = await dig({ url: fixture('modern.html'), name: 't-modern-m', modes: ['light'], platform: 'mobile' });
   for (const k of [...expected.desktop, ...expected.mobileAlso]) assert.ok(keys(r).includes(k), `mobile should report ${k}`);
   assert.equal(r.findings.find((f) => f.key === 'ok|target-size').tier, 'practice');
-  const png = fs.readFileSync(path.join(r.runDir, 'light.png'));
-  assert.equal(png.readUInt32BE(16), 390 * 2, 'screenshot is a 390px phone viewport at 2x');
+  const rep = JSON.parse(fs.readFileSync(path.join(r.runDir, 'report.json'), 'utf8'));
+  assert.deepEqual(rep.viewport, { width: 390, height: 844, mobile: true }, 'measured in a phone viewport');
+  assert.equal(fs.readFileSync(path.join(r.runDir, 'light.png')).readUInt32BE(16) % 2, 0, 'screenshot at 2x pixels');
 });
 
 test('a project design.md changes what is checked: rules off, severities, ignored areas, type scale', async () => {
@@ -71,4 +72,16 @@ test('the practice pack never reaches legacy tokens callers (benchmark stays com
   const tiny = el({ id: 'x', fontSize: 9, isBody: true, blockLines: 4, textLen: 900, lineHeight: 9, isTarget: true, hitRect: { x: 0, y: 0, w: 8, h: 8 } });
   assert.deepEqual(runRules([tiny], tokens), []);
   assert.deepEqual(runRules([tiny], resolveContract({ cwd: tmpDir() })).map((f) => f.rule).sort(), ['line-height-tight', 'line-length', 'text-too-small']);
+});
+
+test('fonts renamed by bundlers are recognised: next/font, its fallback, variable fonts', async () => {
+  const { fontName } = await import('../../src/engine/design-checks.mjs');
+  assert.equal(fontName("__Inter_b4e6b6, __Inter_Fallback_b4e6b6"), 'Inter');
+  assert.equal(fontName('__Inter_Fallback_b4e6b6'), 'Inter');
+  assert.equal(fontName('"__JetBrains_Mono_3c557b", monospace'), 'JetBrains Mono');
+  assert.equal(fontName("'Inter Variable', sans-serif"), 'Inter');
+  assert.equal(fontName('Arial, sans-serif'), 'Arial');
+  const c = normalize({ fonts: ['Inter', 'Montserrat'] });
+  assert.deepEqual(runRules([el({ id: 'a', fontFamily: '__Inter_b4e6b6, __Inter_Fallback_b4e6b6' }), el({ id: 'b', fontFamily: '__Montserrat_79b90d' })], c), [], 'next/font names are the chosen fonts');
+  assert.deepEqual(runRules([el({ id: 'c', fontFamily: 'Arial, sans-serif' })], c).map((f) => f.rule), ['font-family'], 'a real fallback is still caught');
 });

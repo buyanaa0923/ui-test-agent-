@@ -81,8 +81,12 @@ Set `MOLE_RUNS_DIR` to put runs elsewhere (tests do).
 6. **Spend is capped** (`BUDGET_USD`) and every model call is metered, including the risk screen.
 7. **Nothing prints from the engine.** Only surfaces write to stdout; in MCP mode stdout carries protocol messages only.
 8. **The contract is explicit.** Every dig names its design contract and stamps its hash; a broken `DESIGN.md` stops the run (exit 64) instead of falling back to a default.
-9. **Watching changes pace, never results.** `watch` (CLI `--watch`, MCP `watch: true`) attaches the overlay and lingers between steps; the overlay is injected by the CLI (MCP may not import `ui/`), and `MOLE_HEADLESS=1` keeps any window closed.
-10. **Tests never see model keys.** `scripts/test.mjs` blanks them, and a test fails if they leak through.
+9. **Pages are measured as people see them**: one screen at a time at the real window size (a stretched viewport breaks
+   `100vh` layouts). Only an app shell that scrolls inside an inner panel is measured with a tall viewport, and the run
+   says so. A page whose paint does not change when dark mode is switched on (OS setting and `.dark` class) is checked
+   in light only, and the run says so.
+10. **Watching changes pace, never results.** `watch` (CLI `--watch`, MCP `watch: true`) attaches the overlay and lingers between steps; the overlay is injected by the CLI (MCP may not import `ui/`), and `MOLE_HEADLESS=1` keeps any window closed.
+11. **Tests never see model keys.** `scripts/test.mjs` blanks them, and a test fails if they leak through.
 
 ## How to extend
 

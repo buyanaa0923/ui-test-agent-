@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tall page: a 100vh hero, content far below the fold, no dark mode</title>
+<style>
+  body { margin: 0; font: 14px/1.5 Inter, sans-serif; color: #0f172a; background: #ffffff; }
+  .hero { height: 100vh; background: #0f172a; color: #ffffff; display: flex; align-items: center; padding: 0 24px; }
+  .hero h1 { font: 600 32px Montserrat, sans-serif; margin: 0; }
+  .spacer { height: 2600px; }
+  .deep { padding: 24px; }
+  .faint { color: #cbd5e1; margin: 0; }
+</style>
+</head>
+<body>
+  <section class="hero" id="hero"><h1 id="hero-title">Above the fold</h1></section>
+  <div class="spacer"></div>
+  <section class="deep"><p id="deep-faint" class="faint">This grey text sits far below the fold and fails contrast.</p></section>
+</body>
+</html>

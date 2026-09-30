@@ -81,8 +81,14 @@ const hexes = (v) => {
 };
 const SEVERITIES = ['off', 'low', 'medium', 'high'];
 
-// CSS-ish ignore patterns: ".ant-*" (class prefix) is expanded; anything else must be a valid selector (checked in the page).
-export const toSelector = (s) => String(s).replace(/\.([A-Za-z0-9_-]+)\*/g, (_, p) => `[class^="${p}"],[class*=" ${p}"]`);
+// CSS-ish ignore patterns: ".ant-*" or plain "ant-*" (class prefix) is expanded; anything else must be a valid selector
+// (checked in the page).
+const classPrefix = (p) => `[class^="${p}"],[class*=" ${p}"]`;
+export const toSelector = (s) => {
+  const v = String(s).trim();
+  if (/^[A-Za-z_][\w-]*\*$/.test(v)) return classPrefix(v.slice(0, -1));
+  return v.replace(/\.([A-Za-z0-9_-]+)\*/g, (_, p) => classPrefix(p));
+};
 
 export function normalize(raw, { platform = 'desktop', name = 'contract', sources = [], prose = '', notes = [] } = {}) {
   const r = kebabKeys(raw);

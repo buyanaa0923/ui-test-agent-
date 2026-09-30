@@ -113,7 +113,12 @@ export async function collect(page, { ignore = [] } = {}) {
       return null;
     };
     const ownText = (el) => [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join(' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+    // Rects are page coordinates (viewport + scroll), so measurements taken one screen at a time line up; idx is the
+    // element's place in the document, so the same element measured on two screens is recognised as one.
+    const sx = window.scrollX, sy = window.scrollY;
+    let idx = -1;
     for (const el of document.querySelectorAll('body, body *')) {
+      idx++;
       if (skip.has(el.tagName.toUpperCase())) continue;
       if (ignoreSel && el.closest(ignoreSel)) continue;
       const cs = getComputedStyle(el);
@@ -155,7 +160,10 @@ export async function collect(page, { ignore = [] } = {}) {
         isButton,
         hasLabel,
         buttonName,
-        rect: { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y) },
+        idx,
+        rect: { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x + sx), y: Math.round(r.y + sy) },
+        // On screen when measured: only then is what is painted behind it (contrast) read from the real layers.
+        centerInView: r.x + r.width / 2 >= 0 && r.y + r.height / 2 >= 0 && r.x + r.width / 2 < innerWidth && r.y + r.height / 2 < innerHeight,
         inlineStyle: el.getAttribute('style') || '',
         hasTitle: !!(el.getAttribute('title') || el.getAttribute('aria-label')),
         lines: hasText ? textLines(el) : 0,
@@ -178,7 +186,7 @@ export async function collect(page, { ignore = [] } = {}) {
         bg: hasText ? bgAt(el, r) : null,
         radii: ['borderTopLeftRadius', 'borderTopRightRadius', 'borderBottomRightRadius', 'borderBottomLeftRadius'].map((k) => (cs[k].includes('%') ? null : px(cs[k]))),
         isLink, isTarget, inlineInText,
-        hitRect: { x: Math.round(hit.x), y: Math.round(hit.y), w: Math.round(hit.r - hit.x), h: Math.round(hit.b - hit.y) },
+        hitRect: { x: Math.round(hit.x + sx), y: Math.round(hit.y + sy), w: Math.round(hit.r - hit.x), h: Math.round(hit.b - hit.y) },
         inputType: isControl ? (tag === 'input' ? type || 'text' : tag) : null,
         isBody, blockLines: bLines,
         textLen: isBody ? el.textContent.replace(/\s+/g, ' ').trim().length : 0,
@@ -260,6 +268,16 @@ export const activeRules = (c) => Object.keys(RULES).map((rule) => {
 export const ruleMeta = (rule, c) => { const m = RULES[rule]; return typeof m === 'function' ? m(c) : m || { tier: 'practice', ref: '', fix: '' }; };
 
 const round = (n) => Math.round(n * 100) / 100;
+
+// The family a person chose, from the first family the browser was given. Bundlers rename fonts they self-host:
+// next/font serves Inter as "__Inter_b4e6b6" (and "__Inter_Fallback_b4e6b6"), variable fonts come as "Inter Variable".
+export function fontName(stack) {
+  let f = String(stack || '').split(',')[0].replace(/['"]/g, '').trim();
+  const next = f.match(/^__(.+?)(?:_Fallback)?_[0-9a-f]{5,8}$/i);
+  if (next) f = next[1].replace(/_/g, ' ');
+  return f.replace(/\s+(Variable|VF)$/i, '');
+}
+
 const contains = (a, b) => a.x <= b.x && a.y <= b.y && a.x + a.w >= b.x + b.w && a.y + a.h >= b.y + b.h;
 const circleTouches = (cx, cy, rad, q) => {
   const dx = Math.max(q.x - cx, 0, cx - (q.x + q.w)), dy = Math.max(q.y - cy, 0, cy - (q.y + q.h));
@@ -284,7 +302,7 @@ export function runRules(elements, contract, { mode = 'light' } = {}) {
     const { tier, ref, fix } = ruleMeta(rule, c);
     out.push({ key, rule, severity: sev, tier, ref, fix, element: el.label, text: el.text, mode, detail, rect: el.rect,
       ...(el.hint ? { hint: { ...el.hint, id: el.id, tag: el.tag, context: el.ancestors } } : {}),
-      ctx: { tag: el.tag, role: el.role, disabled: el.disabled, ariaHidden: el.ariaHidden, srOnly: el.srOnly, describedBy: el.describedBy, ancestors: el.ancestors, fontSize: el.fontSize, fontFamily: el.fontFamily.split(',')[0].replace(/['"]/g, '').trim() } });
+      ctx: { tag: el.tag, role: el.role, disabled: el.disabled, ariaHidden: el.ariaHidden, srOnly: el.srOnly, describedBy: el.describedBy, ancestors: el.ancestors, fontSize: el.fontSize, fontFamily: fontName(el.fontFamily) } });
   };
   // Target facts (hitRect...) only exist in fact lists from the current collector; without them the rule does not apply.
   const targets = c.targets ? elements.filter((e) => e.isTarget && e.hitRect) : [];
@@ -301,7 +319,7 @@ export function runRules(elements, contract, { mode = 'light' } = {}) {
 
     // 2. Font family
     if (c.fonts && el.hasText) {
-      const first = el.fontFamily.split(',')[0].replace(/['"]/g, '').trim();
+      const first = fontName(el.fontFamily);
       if (!c.fonts.some((f) => f.toLowerCase() === first.toLowerCase())) {
         add(el, 'font-family', 'medium', `font is "${first}", allowed: ${c.fonts.join(', ')}`);
       }

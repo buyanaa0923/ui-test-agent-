@@ -34,3 +34,7 @@ test('yaml subset: mistakes throw with a line number instead of half-reading', (
   assert.throws(() => parseYaml('a:\n    b: 1\n  c: 2\n'), /line 3: unexpected indentation/);
   assert.throws(() => parseYaml('a:\n\tb: 1\n'), /tabs/);
 });
+
+test('yaml subset: a key set twice is an error, not a silent overwrite', () => {
+  assert.throws(() => parseYaml('fonts: [Inter]\ncolors: []\nfonts: [Montserrat]\n'), /line 3: "fonts" is set twice/);
+});

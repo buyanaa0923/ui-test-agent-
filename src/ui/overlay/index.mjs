@@ -22,6 +22,7 @@ export async function attachOverlay({ context, page, bus }) {
   let feed = [];
   let final = null;
   let startedWall = Date.now();
+  let doing = null; // what the page is showing right now (measuring screen 3, results of screen 2/10...)
 
   const call = (fn, ...args) => page.evaluate(([f, a]) => (window.__mole ? window.__mole[f](...a) : null), [fn, args]).catch(() => null);
   const say = (kind, text) => { feed = [...feed.slice(-3), { kind, text }]; if (!hidden) call('feed', kind, text); };
@@ -30,7 +31,7 @@ export async function attachOverlay({ context, page, bus }) {
     const groups = groupFindings(state.findings);
     const done = state.steps.filter((x) => x.status === 'ok').length;
     const progress = state.command === 'tunnel' ? Math.min(1, (state.tunnel.exercised + state.tunnel.skipped) / Math.max(state.tunnel.found, 1)) : state.steps.length ? done / state.steps.length : 0;
-    const sub = final ? 'done' : state.phase === 'judging' ? 'sniffing with Jev → Claude' : state.command === 'tunnel' ? `tunnelling · ${state.tunnel.exercised + state.tunnel.skipped}/${state.tunnel.found || '?'} controls` : state.steps.find((x) => x.status === 'run')?.label ? `digging · ${state.steps.find((x) => x.status === 'run').label.toLowerCase()}` : 'digging';
+    const sub = final ? 'done' : doing && state.phase !== 'judging' ? doing : state.phase === 'judging' ? 'sniffing with Jev → Claude' : state.command === 'tunnel' ? `tunnelling · ${state.tunnel.exercised + state.tunnel.skipped}/${state.tunnel.found || '?'} controls` : state.steps.find((x) => x.status === 'run')?.label ? `digging · ${state.steps.find((x) => x.status === 'run').label.toLowerCase()}` : 'digging';
     return { sub, url: state.url, elements: state.elements, nuggets: groups.length, usd: usd(state.costUsd), progress: final ? 1 : progress, startedAtWall: startedWall, feed, ...(final ? { final } : {}) };
   };
   const push = () => { if (!hidden) return call('hud', hud()); };
@@ -42,11 +43,19 @@ export async function attachOverlay({ context, page, bus }) {
   bus.on((e) => {
     state = reduce(state, e);
     switch (e.type) {
-      case 'run.start': startedWall = Date.now(); feed = []; final = null; break;
+      case 'run.start': startedWall = Date.now(); feed = []; final = null; doing = null; break;
       case 'page.loaded': say('rule', `loaded ${e.elements} elements`); break;
+      // Measuring: a quick laser pass over each screen as it is read (green = measured).
+      case 'screen.measured': doing = `measuring ${e.mode} · screen ${e.index + 1}`; call('sweep', e.checked || [], 350); break;
+      // Then the tour: each screen again at human pace, with the real results (red = a rule fired, with its name).
+      case 'screen.show':
+        doing = `results ${e.mode} · screen ${e.index + 1}/${e.of}`;
+        call('sweep', e.checked || [], 900);
+        say('rule', `${e.mode} · screen ${e.index + 1}/${e.of}: ${(e.checked || []).filter((r) => r.rule).length} flagged`);
+        break;
       case 'mode.done':
-        call('sweep', e.checked || [], 800);
-        say('rule', `${e.mode}: ${e.findings} nugget${e.findings === 1 ? '' : 's'} in ${e.elements} elements`);
+        doing = null;
+        say(e.skipped ? 'human' : 'rule', e.skipped ? `${e.mode} skipped: no dark mode here` : `${e.mode}: ${e.findings} nugget${e.findings === 1 ? '' : 's'} in ${e.elements} elements`);
         break;
       case 'finding': say(e.severity === 'high' ? 'fail' : 'rule', `${e.rule} · ${e.element} · ${stripMode(e.detail)}`.slice(0, 60)); break;
       case 'decision':
@@ -68,7 +77,7 @@ export async function attachOverlay({ context, page, bus }) {
       }
       default:
     }
-    if (['stage.end', 'mode.done', 'control.result', 'run.result', 'decision', 'finding'].includes(e.type)) push();
+    if (['stage.end', 'mode.done', 'control.result', 'run.result', 'decision', 'finding', 'screen.measured', 'screen.show'].includes(e.type)) push();
   }, { replay: true });
 
   return {
