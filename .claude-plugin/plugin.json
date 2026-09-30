@@ -2,9 +2,9 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "mole",
   "displayName": "Mole",
-  "version": "0.3.0",
-  "description": "Digs up UI bugs before your users do: design-system checks, click-through testing, and a Jev to Claude to human judging ladder, with a live browser overlay.",
+  "description": "Digs up UI bugs before your users do: checks your running app against your DESIGN.md and modern design practice, points every defect at its file:line, and shows a live panel while it works.",
   "author": { "name": "Mole contributors" },
+  "repository": "https://github.com/buyanaa0923/ui-test-agent-",
   "license": "ISC",
   "keywords": ["ui-testing", "design-system", "accessibility", "playwright", "qa"],
   "commands": ["./plugin/commands/"],
@@ -13,7 +13,41 @@
   "mcpServers": {
     "mole": {
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/mole.mjs", "mcp"]
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/mole.mjs", "mcp"],
+      "env": {
+        "MOLE_PROJECT_DIR": "${CLAUDE_PROJECT_DIR}",
+        "MOLE_WATCH": "${user_config.show_panel}",
+        "MOLE_CLAUDE_JUDGE": "${user_config.claude_judge}",
+        "TYPESAFE_API_KEY": "${user_config.typesafe_api_key}",
+        "ANTHROPIC_API_KEY": "${user_config.anthropic_api_key}"
+      }
+    }
+  },
+  "userConfig": {
+    "show_panel": {
+      "type": "boolean",
+      "title": "Show the Mole panel",
+      "description": "Open a browser window with the live Mole panel whenever Claude runs a check (turn off for silent, faster checks).",
+      "default": true
+    },
+    "claude_judge": {
+      "type": "string",
+      "title": "Claude second opinion",
+      "description": "Only used together with a Jev key, for the findings Jev is unsure about. login = your own Claude Code login (no key needed); api-key = the Anthropic API key below; off = send them to a person.",
+      "options": ["login", "api-key", "off"],
+      "default": "login"
+    },
+    "typesafe_api_key": {
+      "type": "string",
+      "title": "Jev key (optional)",
+      "description": "TypeSafe API key for Jev, the fast cheap first judge. Leave empty to run the free deterministic checks only. Stored in your OS keychain.",
+      "sensitive": true
+    },
+    "anthropic_api_key": {
+      "type": "string",
+      "title": "Anthropic API key (optional)",
+      "description": "Only needed if Claude second opinion is set to api-key. Stored in your OS keychain.",
+      "sensitive": true
     }
   }
 }

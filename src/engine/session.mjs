@@ -5,13 +5,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { launchBrowser, resolveStorageState } from './browser.mjs';
 
-export async function openSession({ viewport = { width: 1280, height: 800 }, headed = false, slowMo = 0, storageState = null, record = false, runDir, attach = null, bus = null, meter = null } = {}) {
+// mobile: emulate a phone (touch, mobile viewport meta, 2x pixels) so responsive CSS and touch rules see what a phone sees.
+export async function openSession({ viewport = { width: 1280, height: 800 }, mobile = false, headed = false, slowMo = 0, storageState = null, record = false, runDir, attach = null, bus = null, meter = null } = {}) {
   const state = resolveStorageState(storageState); // fail before launching anything: a missing login file must not leak a browser
   const h = meter?.start('launch');
   const browser = await launchBrowser({ headless: !headed, slowMo, onNote: (message) => bus?.emit('note', { message }) });
   meter?.end(h);
   const context = await browser.newContext({
     viewport,
+    ...(mobile ? { isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : {}),
     ...state,
     ...(record ? { recordVideo: { dir: path.join(runDir, 'video'), size: viewport } } : {}),
   });

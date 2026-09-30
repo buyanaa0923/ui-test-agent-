@@ -22,7 +22,8 @@ function findPreinstalled() {
 
 export async function launchBrowser({ headless = true, slowMo = 0, onNote = () => {} } = {}) {
   const args = process.getuid?.() === 0 ? ['--no-sandbox'] : [];
-  const base = { headless, args, ...(slowMo ? { slowMo } : {}) };
+  // MOLE_HEADLESS=1 never opens a window (CI machines, tests), even when a run asks to be watched.
+  const base = { headless: headless || /^(1|true|yes)$/i.test(process.env.MOLE_HEADLESS || ''), args, ...(slowMo ? { slowMo } : {}) };
   const explicit = process.env.CHROMIUM_PATH;
   if (explicit) return chromium.launch({ ...base, executablePath: explicit });
   try {

@@ -7,7 +7,8 @@ import { version } from '../core/version.mjs';
 
 const SUPPORTED = ['2025-06-18', '2025-03-26', '2024-11-05'];
 
-export function createServer({ input = process.stdin, output = process.stdout } = {}) {
+// overlay: optional async () => attachOverlay, injected by the CLI (mcp may not import src/ui); powers `watch: true`.
+export function createServer({ input = process.stdin, output = process.stdout, overlay = null } = {}) {
   const send = (msg) => output.write(JSON.stringify({ jsonrpc: '2.0', ...msg }) + '\n');
   const reply = (id, result) => send({ id, result });
   const fail = (id, code, message) => send({ id, error: { code, message } });
@@ -32,7 +33,7 @@ export function createServer({ input = process.stdin, output = process.stdout } 
     let n = 0;
     const onEvent = token == null ? null : (e) => { const message = say(e); if (message) send({ method: 'notifications/progress', params: { progressToken: token, progress: ++n, message } }); };
     try {
-      const r = await tool.run(params.arguments || {}, { onEvent });
+      const r = await tool.run(params.arguments || {}, { onEvent, overlay });
       reply(id, { content: [{ type: 'text', text: r.text }], structuredContent: r.data ?? undefined, isError: !!r.isError });
     } catch (e) {
       reply(id, { content: [{ type: 'text', text: `${tool.name} failed: ${e.problem || e.message}` }], isError: true });

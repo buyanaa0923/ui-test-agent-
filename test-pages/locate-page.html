@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Locate fixture: what test-pages/locate/src renders in a dev build (each element carries one defect)</title>
+<style>
+  body { font-family: Inter, sans-serif; color: #0f172a; background: #ffffff; margin: 24px; font-size: 14px; line-height: 1.5; }
+  button { font-family: Inter, sans-serif; font-size: 14px; border: 0; border-radius: 8px; background: #0f172a; color: #ffffff; }
+  .login-submit { height: 36px; width: 90px; padding: 0 8px; }
+  .icon-btn { width: 16px; height: 16px; padding: 0; }
+  .login-forgot { color: #cbd5e1; }
+  .field-input { font-family: Inter, sans-serif; font-size: 14px; height: 36px; border: 1px solid #94a3b8; border-radius: 8px; }
+  .row { display: flex; gap: 2px; align-items: center; margin: 16px 0; }
+</style>
+</head>
+<body>
+  <header class="app-header row"><span class="brand">Acme</span><button class="icon-btn" aria-label="Close"></button><button class="icon-btn" aria-label="Open menu"></button></header>
+  <form class="login-form stack-4">
+    <h2 class="login-title">Welcome back</h2>
+    <input class="field-input" type="email" placeholder="Email address">
+    <button type="submit" class="btn btn-primary login-submit">Sign in to your account</button>
+    <p><a class="login-forgot" href="/forgot">Forgot your password?</a></p>
+  </form>
+  <div class="card">
+    <h3 class="card-title" data-mole-src="src/components/Card.tsx:6" style="font-size: 10px">Statement</h3>
+    <p class="card-body" style="font-size: 10px">Ready to download.</p>
+  </div>
+  <script>
+    // What React 18 dev builds attach to DOM nodes (a fiber with _debugSource), in miniature.
+    function Card() {}
+    document.querySelector('.card-body')['__reactFiber$fixture'] = { _debugSource: { fileName: '/src/components/Card.tsx', lineNumber: 7, columnNumber: 7 }, return: { type: 'div', return: { type: Card } } };
+    // React 19 keeps no source on the fiber, only the component: the name still narrows the search.
+    function LoginForm() {}
+    document.querySelector('.login-submit')['__reactFiber$fixture'] = { return: { type: 'form', return: { type: LoginForm } } };
+  </script>
+</body>
+</html>

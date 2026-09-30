@@ -49,7 +49,8 @@ test('tunnel: exit 1 on dead clicks, 0 on a page whose controls work', async () 
 test('replay plays a recorded run back with the same outcome and no browser', async () => {
   const runs = tmpDir('mole-runs-');
   const live = await mole(['dig', fixture('sample.html'), '--no-model', '--json'], { runs });
-  const runDir = path.join(runs, fs.readdirSync(runs)[0]);
+  const runDir = path.join(runs, fs.readdirSync(runs, { withFileTypes: true }).find((d) => d.isDirectory()).name);
+  assert.equal(fs.readFileSync(path.join(runs, '.gitignore'), 'utf8').trim().split('\n').pop(), '*', 'the runs folder keeps itself out of git');
   assert.ok(fs.existsSync(path.join(runDir, 'trace.jsonl')));
   const rp = await mole(['replay', runDir, '--speed', '0', '--plain'], { runs });
   assert.equal(rp.code, live.code); assert.match(rp.out, /NUGGETS FOUND/); assert.match(rp.out, /contrast/);

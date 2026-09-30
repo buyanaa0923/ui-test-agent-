@@ -8,7 +8,16 @@ import { EventBus, traceTo } from './events.mjs';
 
 export const loadPricing = () => JSON.parse(fs.readFileSync(path.join(P.config, 'pricing.json'), 'utf8'));
 
+// Inside someone's project, runs must never show up in their git status: the folder ignores itself.
+function ensureRunsFolder() {
+  const ignore = path.join(P.runs, '.gitignore');
+  if (fs.existsSync(ignore)) return;
+  fs.mkdirSync(P.runs, { recursive: true });
+  fs.writeFileSync(ignore, '# Mole run output (screenshots, reports, videos). Not source.\n*\n');
+}
+
 export function createRun({ name, plannedSteps = null, bus = new EventBus(), maxUsd } = {}) {
+  ensureRunsFolder();
   const runId = `${name}-${new Date().toISOString().replace(/[:.]/g, '-')}`;
   const runDir = path.join(P.runs, runId);
   const meter = new Meter({ runDir, pricing: loadPricing(), plannedSteps, bus, ...(maxUsd != null ? { maxUsd } : {}) });

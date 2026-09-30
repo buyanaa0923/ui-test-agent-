@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modern-web fixture: seeded best-practice defects, plus decoys that must not fire</title>
+<style>
+  body { font-family: Inter, sans-serif; color: #0f172a; background: #ffffff; margin: 24px; font-size: 14px; line-height: 1.5; }
+  h1 { font-size: 24px; margin: 0 0 16px; }
+  button { font-family: Inter, sans-serif; font-size: 14px; border: 0; border-radius: 8px; background: #0f172a; color: #ffffff; padding: 0; }
+  .row { display: flex; align-items: center; gap: 2px; margin-bottom: 24px; }
+  .ok { height: 36px; padding: 0 16px; }
+  .icon { width: 16px; height: 16px; font-size: 12px; line-height: 16px; }
+  .alone { margin: 40px; }
+  .para { font-size: 14px; margin: 0 0 16px; width: 320px; }
+  label { display: block; font-size: 14px; margin-bottom: 4px; }
+  input { font-family: Inter, sans-serif; font-size: 14px; height: 36px; padding: 0 8px; border: 1px solid #94a3b8; border-radius: 8px; }
+</style>
+</head>
+<body>
+  <h1>Account settings</h1>
+
+  <!-- target-size: a 16px icon button pressed against another target -->
+  <div class="row">
+    <button id="ok" class="ok" type="button">Save</button>
+    <button id="tiny" class="icon" type="button" aria-label="Close"><span aria-hidden="true">×</span></button>
+  </div>
+
+  <!-- decoy: a 16px icon button with room around it (WCAG 2.5.8 spacing exception) -->
+  <div class="alone"><button id="spaced" class="icon" type="button" aria-label="Help"><span aria-hidden="true">?</span></button></div>
+
+  <!-- decoy: a link inside a sentence (WCAG 2.5.8 inline exception) -->
+  <p id="sentence" class="para">Read the <a id="inline-link" href="#terms">terms</a> before you continue.</p>
+
+  <p id="fine-print" style="font-size: 10px; margin: 0 0 16px;">Rates are indicative.</p>
+  <p id="small-body" class="para" style="font-size: 13px;">Your statement is ready.</p>
+  <p id="tight" class="para" style="line-height: 1.1;">Your application is reviewed by a loan officer within two working days, and you will get a message as soon as a decision is made about it.</p>
+  <p id="wide" style="font-size: 14px; width: 1100px; margin: 0 0 16px;">Loan terms depend on your income, your existing obligations, and the collateral you offer. A longer term lowers the monthly payment but raises the total interest you pay over the life of the loan. You can repay early at any time without a fee, and every early payment reduces the interest charged from that day on. If your circumstances change, talk to your branch before a payment is missed, because a restructured plan costs far less than a late one.</p>
+
+  <label for="phone">Phone</label>
+  <input id="phone" type="tel">
+</body>
+</html>

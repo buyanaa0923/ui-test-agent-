@@ -80,13 +80,18 @@ Set `MOLE_RUNS_DIR` to put runs elsewhere (tests do).
 5. **Each distinct defect is judged once.** The same finding in light and dark shares one verdict (half the model calls).
 6. **Spend is capped** (`BUDGET_USD`) and every model call is metered, including the risk screen.
 7. **Nothing prints from the engine.** Only surfaces write to stdout; in MCP mode stdout carries protocol messages only.
+8. **The contract is explicit.** Every dig names its design contract and stamps its hash; a broken `DESIGN.md` stops the run (exit 64) instead of falling back to a default.
+9. **Watching changes pace, never results.** `watch` (CLI `--watch`, MCP `watch: true`) attaches the overlay and lingers between steps; the overlay is injected by the CLI (MCP may not import `ui/`), and `MOLE_HEADLESS=1` keeps any window closed.
+10. **Tests never see model keys.** `scripts/test.mjs` blanks them, and a test fails if they leak through.
 
 ## How to extend
 
 | To add | Do this |
 | :- | :- |
 | a CLI command | add `src/cli/commands/<name>.mjs` (`name, summary, usage, options, run`) and register it in `commands/index.mjs` |
-| a design rule | add it in `engine/design-checks.mjs`, add a mutation to `bench/truth.json`; `npm run evidence` must stay at precision/recall 1 |
+| a design rule | measure it in `collect()`, add it to `RULES`/`APPLIES` in `engine/design-checks.mjs`, give its threshold a contract key (`engine/contract.mjs`) and a pack value (`config/packs/`); seed it with a decoy in a fixture. See `docs/DESIGN-CONTRACT.md` |
+| a design-system rule change | add a mutation to `bench/truth.json`; `npm run evidence` must stay at precision/recall 1 |
+| a built-in pack | add `config/packs/<name>.md` (a design.md with a ```` ```mole ```` block); cite a source for every number |
 | an event | emit it from the engine, document it in `core/events.mjs`, handle it in `ui/state.mjs` (surfaces then pick it up) |
 | a surface | subscribe to the bus; reuse `ui/state.mjs`; do not import it from `engine/` |
 | an MCP tool | add it to `src/mcp/tools.mjs` |

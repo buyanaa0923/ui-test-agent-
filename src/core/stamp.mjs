@@ -4,16 +4,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-export function stamp(root) {
+// contract: the resolved design contract of the run (dig); without it the stamp names the tokens file, as before.
+export function stamp(root, contract = null) {
   const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
   const pkg = JSON.parse(read('package.json'));
   const tokensRaw = read('config/tokens.json');
   const tokens = JSON.parse(tokensRaw);
-  const rules = crypto.createHash('sha256').update(read('src/engine/design-checks.mjs')).digest('hex').slice(0, 12);
+  const rules = crypto.createHash('sha256').update(read('src/engine/design-checks.mjs') + read('src/engine/contract.mjs')).digest('hex').slice(0, 12);
   return {
     tool: `${pkg.name}@${pkg.version}`,
-    designSystem: `${tokens.source.package}@${tokens.source.version}`,
+    designSystem: contract ? contract.name : `${tokens.source.package}@${tokens.source.version}`,
     tokensHash: crypto.createHash('sha256').update(tokensRaw).digest('hex').slice(0, 12),
+    ...(contract ? { contractHash: contract.hash, platform: contract.platform } : {}),
     rulesHash: rules,
     trigger: process.env.RUN_TRIGGER || 'manual', // set RUN_TRIGGER=scheduled in cron/launchd so scheduled runs can be counted
     node: process.version,

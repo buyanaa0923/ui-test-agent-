@@ -3,7 +3,7 @@ export class BudgetExceeded extends Error {
   constructor(spent, cap) { super(`budget cap reached: $${spent.toFixed(4)} spent, cap $${cap}`); this.name = 'BudgetExceeded'; }
 }
 
-export async function withRetry(fn, { tries = 3, baseMs = 400, retryOn = (e) => !/\b(400|401|403)\b/.test(e.message) } = {}) {
+export async function withRetry(fn, { tries = 3, baseMs = 400, retryOn = (e) => !/\b(400|401|403)\b|not configured/.test(e.message) } = {}) {
   let last;
   for (let i = 0; i < tries; i++) {
     try { return await fn(); } catch (e) {

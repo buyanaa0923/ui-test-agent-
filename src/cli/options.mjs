@@ -30,6 +30,16 @@ export const num = (v, d) => (v == null || v === '' || !Number.isFinite(Number(v
 
 export { resolveTriage } from '../core/triage.mjs';
 
+// Options for commands that check a page against a design contract.
+export const designOptions = {
+  design: { type: 'string', description: 'design contract (a design.md); default: DESIGN.md / design.md / .mole/design.md here, or MOLE_DESIGN, else the built-in NetOS contract' },
+  src: { type: 'string', description: 'project source folder, to point each finding at its file:line (default: MOLE_SRC_ROOT, else the DESIGN.md project, else here); "none" to skip' },
+  platform: { type: 'string', description: "desktop | mobile (phone viewport, touch-target and iOS rules); default: the design's own platform, else desktop" },
+};
+
+// --src -> the engine's root / locate options.
+export const sourceOpts = (v) => (v.src === 'none' ? { locate: false } : { root: v.src || null });
+
 export const modelOptions = {
   cascade: { type: 'boolean', description: 'judge findings with Jev, escalating the unsure ones to Claude (default when keys are set)' },
   judge: { type: 'boolean', description: 'judge findings with Claude only' },

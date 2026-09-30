@@ -9,7 +9,8 @@ export default {
   async run() {
     console.log = console.error; // stdout is the protocol channel: nothing else may write to it
     console.info = console.error;
-    await createServer();
+    // Loaded only when a tool call asks to watch, so headless calls stay lean.
+    await createServer({ overlay: async () => (await import('../../ui/overlay/index.mjs')).attachOverlay });
     return 0;
   },
 };
