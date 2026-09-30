@@ -4,7 +4,7 @@
 import { groupFindings as groupFindingsOf, uniqueCounted as uniqueCountedOf } from '../core/findings.mjs';
 
 export const createState = ({ pricing = null } = {}) => ({
-  pricing, command: null, url: null, runId: null, runDir: null, triage: 'none', picker: null, riskScreen: false, max: null, modes: [],
+  pricing, command: null, url: null, runId: null, runDir: null, triage: 'none', picker: null, riskScreen: false, max: null, depth: null, modes: [],
   phase: 'idle', // idle | loading | checking | judging | tunnelling | done | not_run
   t: 0, startedAt: 0,
   steps: [], // dig: load / light / dark / judge
@@ -14,7 +14,7 @@ export const createState = ({ pricing = null } = {}) => ({
   claude: { consulted: 0, usd: 0 },
   human: 0,
   costUsd: 0, byModel: {},
-  tunnel: { found: 0, exercised: 0, skipped: 0, dead: 0, current: null, log: [] },
+  tunnel: { found: 0, exercised: 0, skipped: 0, dead: 0, current: null, log: [], pagesEntered: 0, pagesFound: 0, page: null, pagesMeasured: 0, checkDesign: false, statesFound: 0, statesEntered: 0, state: null, forms: null, formsDone: 0, formsSubmitted: 0, formsSkipped: 0 },
   notes: [], problem: null, end: null,
 });
 
@@ -33,7 +33,7 @@ export function reduce(s, e) {
   const st = { ...s, t: e.t ?? s.t };
   switch (e.type) {
     case 'run.start':
-      return { ...st, command: e.command, url: e.url, runId: e.runId, runDir: e.runDir, triage: e.triage || 'none', picker: e.picker || null, riskScreen: !!e.riskScreen, max: e.max ?? null, modes: e.modes || [], skippedModes: [], contract: e.contract || null, phase: 'loading', startedAt: e.t ?? 0,
+      return { ...st, command: e.command, url: e.url, runId: e.runId, runDir: e.runDir, triage: (e.designTriage && e.designTriage !== 'none' ? e.designTriage : e.triage) || 'none', picker: e.picker || null, riskScreen: !!e.riskScreen, max: e.max ?? null, depth: e.depth ?? null, tunnel: { ...s.tunnel, checkDesign: !!e.checkDesign, forms: e.forms && e.forms !== 'off' ? e.forms : null }, modes: e.modes || [], skippedModes: [], contract: e.contract || null, phase: 'loading', startedAt: e.t ?? 0,
         steps: e.command === 'dig'
           ? [{ id: 'load', label: 'Dig in', status: 'run' }, ...(e.modes || []).map((m) => ({ id: m, label: m === 'dark' ? 'Dark' : m === 'light' ? 'Light' : m, status: 'wait' })), ...(e.triage && e.triage !== 'none' ? [{ id: 'judge', label: 'Sniff', status: 'wait' }] : [])]
           : [{ id: 'load', label: 'Dig in', status: 'run' }, { id: 'tunnel', label: 'Tunnel', status: 'wait' }] };
@@ -41,8 +41,10 @@ export function reduce(s, e) {
       return { ...st, elements: e.elements ?? st.elements, phase: st.command === 'tunnel' ? 'tunnelling' : 'checking',
         steps: setStep(setStep(st.steps, 'load', { status: 'ok', ms: e.ms, detail: `${e.elements} elements` }), st.command === 'tunnel' ? 'tunnel' : st.modes[0], { status: 'run' }) };
     case 'mode.start':
+      if (st.command === 'tunnel') return st; // tunnel measures every page: its steps stay load -> tunnel
       return { ...st, steps: setStep(st.steps, e.mode, { status: 'run' }) };
     case 'mode.done': {
+      if (st.command === 'tunnel') return { ...st, elements: Math.max(st.elements, e.elements || 0) };
       const next = st.modes[st.modes.indexOf(e.mode) + 1];
       const isLast = !next;
       return { ...st, skippedModes: e.skipped ? [...(st.skippedModes || []), e.mode] : st.skippedModes || [], elements: Math.max(st.elements, e.elements), steps: setStep(isLast && st.triage !== 'none' ? setStep(st.steps, 'judge', { status: 'run' }) : next ? setStep(st.steps, next, { status: 'run' }) : st.steps, e.mode, { status: 'ok', detail: e.skipped ? 'skipped: no dark mode' : `${e.elements} checked · ${e.findings} nugget${e.findings === 1 ? '' : 's'}` }),
@@ -72,6 +74,24 @@ export function reduce(s, e) {
     }
     case 'control.found':
       return { ...st, tunnel: { ...st.tunnel, found: Math.max(st.tunnel.found, e.count) } };
+    case 'page.found':
+      return { ...st, tunnel: { ...st.tunnel, pagesFound: st.tunnel.pagesFound + 1 } };
+    case 'page.measured':
+      return e.state ? st : { ...st, tunnel: { ...st.tunnel, pagesMeasured: st.tunnel.pagesMeasured + 1 } };
+    case 'page.enter':
+      return { ...st, tunnel: { ...st.tunnel, pagesEntered: st.tunnel.pagesEntered + 1, page: e.path, state: null } };
+    case 'consistency':
+      return { ...st, consistency: { checked: e.checked, pages: e.pages, reason: e.reason, outliers: e.outliers } };
+    case 'form.fill':
+      return { ...st, tunnel: { ...st.tunnel, current: { n: e.n, role: 'form', label: e.name, phase: 'filling', by: null, confidence: null, risk: null } } };
+    case 'form.result': {
+      const row = { n: e.n ?? null, role: 'form', label: e.name, state: e.state || null, form: true, outcome: e.outcome || 'skipped', detail: e.detail || e.skipped || null, problem: e.problem || null, skipped: e.skipped ? 'sensitive form' : null };
+      return { ...st, tunnel: { ...st.tunnel, current: null, log: [...st.tunnel.log, row], formsDone: st.tunnel.formsDone + (e.skipped ? 0 : 1), formsSubmitted: st.tunnel.formsSubmitted + (e.submitted ? 1 : 0), formsSkipped: st.tunnel.formsSkipped + (e.skipped ? 1 : 0) } };
+    }
+    case 'state.found':
+      return { ...st, tunnel: { ...st.tunnel, statesFound: st.tunnel.statesFound + 1 } };
+    case 'state.enter':
+      return { ...st, tunnel: { ...st.tunnel, statesEntered: st.tunnel.statesEntered + 1, state: e.label } };
     case 'control.pick':
       return { ...st, tunnel: { ...st.tunnel, current: { n: e.n, role: e.role, label: e.label, by: e.by, confidence: e.confidence, phase: 'picked', risk: null } } };
     case 'control.risk': {
@@ -85,7 +105,7 @@ export function reduce(s, e) {
     }
     case 'control.result': {
       const cur = st.tunnel.current || {};
-      const row = { n: e.n, role: cur.role, label: e.label, by: cur.by, confidence: cur.confidence, risk: cur.risk, skipped: e.skipped || null, changed: !!e.changed, dialogOpened: !!e.dialogOpened, errors: e.errors || 0, failedRequests: e.failedRequests || 0, deadClick: !!e.deadClick };
+      const row = { n: e.n, role: cur.role, label: e.label, by: cur.by, confidence: cur.confidence, risk: cur.risk, skipped: e.skipped || null, changed: !!e.changed, dialogOpened: !!e.dialogOpened, errors: e.errors || 0, failedRequests: e.failedRequests || 0, deadClick: !!e.deadClick, page: e.page || null, state: e.state || null, navigatedTo: e.navigatedTo || null, opened: e.opened || null, problem: e.problem || null };
       const log = [...st.tunnel.log, row];
       return { ...st, tunnel: { ...st.tunnel, log, current: null, exercised: st.tunnel.exercised + (e.skipped ? 0 : 1), skipped: st.tunnel.skipped + (e.skipped ? 1 : 0), dead: st.tunnel.dead + (e.deadClick ? 1 : 0) } };
     }

@@ -3,7 +3,7 @@
 import { parseArgs } from 'node:util';
 import { byName } from './commands/index.mjs';
 import { help, commandHelp } from './help.mjs';
-import { NotRunError, EXIT } from '../core/errors.mjs';
+import { NotRunError, UsageError, EXIT } from '../core/errors.mjs';
 import { BudgetExceeded } from '../core/resilience.mjs';
 import { version } from '../core/version.mjs';
 import { ContractError } from '../engine/contract.mjs';
@@ -34,6 +34,7 @@ export async function main(argv) {
     if (e instanceof ContractError) { process.stderr.write(`mole ${name}: design contract: ${e.message}
 Nothing was tested.
 `); return 64; }
+    if (e instanceof UsageError) { process.stderr.write(`mole ${name}: ${e.message}\nNothing was tested.\n`); return 64; }
     if (e instanceof BudgetExceeded) { process.stderr.write(`STOPPED: ${e.message}\n`); return EXIT.NOT_RUN; }
     process.stderr.write(`mole ${name}: ${e.stack || e.message}\n`);
     return EXIT.NOT_RUN; // an internal failure also means nothing trustworthy was tested

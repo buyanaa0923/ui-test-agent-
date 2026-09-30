@@ -256,7 +256,10 @@ export function createLocator({ root = process.cwd(), url = null, maxFiles = 800
     return out;
   }
 
-  return { locate, notes, root };
+  // The explorer measures many pages with one source index: switching pages only resets what is page-aware.
+  function setPage(u) { url = u; onPage = undefined; cache.clear(); }
+
+  return { locate, notes, root, setPage };
 }
 
 export const whereText = (w) => (w ? `${w.file}${w.line ? `:${w.line}` : ''}` : null);

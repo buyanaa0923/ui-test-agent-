@@ -25,6 +25,7 @@ export function buildRecords(runs, { hosts = [], flowOnlyHosts = [], since = nul
     const cutoff = report.kind === 'flow' ? (flowSince ?? since) : since; // independent cutoffs: design and flow tools were fixed at different times
     if (cutoff && at && at < new Date(cutoff).toISOString()) continue;
     for (const f of report.violations || []) {
+      if (report.kind === 'flow' && f.mode && f.mode !== 'flow') continue; // design checks a tunnel ran on its pages: not collected (yet)
       const id = recordId(f);
       let g = groups.get(id);
       if (!g) groups.set(id, (g = { id, kind: report.kind, byMode: new Map(), pages: new Set(), runs: new Set(), stamp: report.stamp || null, at: at || null, shots: {} }));

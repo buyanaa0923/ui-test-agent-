@@ -64,11 +64,15 @@ export async function attachOverlay({ context, page, bus }) {
         else if (e.by === 'claude') say('claude', `Claude: ${e.decision === 'real' ? 'real' : e.decision === 'false_positive' ? 'not a defect' : e.decision}`);
         else say('human', 'needs a person');
         break;
+      case 'page.enter': if (e.n > 1) say('rule', `page ${e.n}: ${e.path.slice(0, 40)}`); break;
+      case 'form.fill': say('rule', `filling form "${e.name.slice(0, 24)}" with test data`); break;
+      case 'form.result': say(e.skipped ? 'human' : e.problem ? 'fail' : 'pass', `${e.name.slice(0, 22)}: ${e.skipped ? 'left alone' : e.problem || e.outcome}`); break;
+      case 'state.enter': say('rule', `inside ${e.label.slice(0, 40)}`); break;
       case 'control.pick': call('target', e.rect, `#${e.n} ${e.label} · ${e.by}${pct(e.confidence)}`); break;
       case 'control.risk': call('badge', `${e.decision === 'safe' ? 'safe ✔' : 'risky ✖ skip'} · ${e.by}${pct(e.confidence)}`, e.decision === 'safe' ? 'safe' : 'risky'); say(e.decision === 'safe' ? 'pass' : 'human', `${e.label.slice(0, 24)}: ${e.decision} (${e.by}${pct(e.confidence)})`); break;
       case 'control.click': call('click'); break;
       case 'control.result':
-        say(e.skipped ? 'human' : e.deadClick || e.errors || e.failedRequests ? 'fail' : 'pass', `${e.label.slice(0, 26)}: ${e.skipped ? 'skipped' : e.deadClick ? 'no effect' : e.errors ? 'JS error' : e.failedRequests ? 'failed request' : e.dialogOpened ? 'opened dialog' : e.changed ? 'changed page' : 'ok'}`);
+        say(e.skipped ? 'human' : e.problem || e.deadClick || e.errors || e.failedRequests ? 'fail' : 'pass', `${e.label.slice(0, 26)}: ${e.skipped ? 'skipped' : e.problem ? e.problem : e.deadClick ? 'no effect' : e.errors ? 'JS error' : e.failedRequests ? 'failed request' : e.opened ? `opened ${e.opened.slice(0, 20)}` : e.dialogOpened ? 'opened dialog' : e.navigatedTo ? `went to ${e.navigatedTo.slice(0, 20)}` : e.changed ? 'changed page' : 'ok'}`);
         break;
       case 'run.result': {
         final = { status: e.status, text: e.status === 'pass' ? 'SURFACED · CLEAN' : e.status === 'defects' ? `NUGGETS FOUND · ${e.findings}` : 'CAVE-IN · NOT RUN' };
@@ -77,7 +81,7 @@ export async function attachOverlay({ context, page, bus }) {
       }
       default:
     }
-    if (['stage.end', 'mode.done', 'control.result', 'run.result', 'decision', 'finding', 'screen.measured', 'screen.show'].includes(e.type)) push();
+    if (['stage.end', 'mode.done', 'control.result', 'form.result', 'page.enter', 'state.enter', 'run.result', 'decision', 'finding', 'screen.measured', 'screen.show'].includes(e.type)) push();
   }, { replay: true });
 
   return {
