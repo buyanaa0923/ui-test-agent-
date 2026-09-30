@@ -26,10 +26,11 @@ src/
     terminal/        theme, sprite, view (pure), live / plain / json renderers
     overlay/         in-page overlay (inject.js) + the Node side that drives it
     dashboard/       local web dashboard + scorecard
-  engine/            what a run DOES: dig, tunnel, browser, guard, design rules   -> core, models. Never src/ui or src/cli
+  engine/            what a run DOES: dig, tunnel, browser, guard, design rules,  -> core, models. Never src/ui or src/cli
+                     design contract (contract.mjs), source mapping (locate.mjs)
   models/            Jev, Claude, the trust ladder (cascade), output validation   -> core
   eval/              measurement: metrics, labelled real set, scorecard data      -> core, models
-  core/              events, run folder, meter, findings, paths, errors, env      -> nothing above
+  core/              events, run folder, meter, findings, paths, errors, env, yaml -> nothing above
 config/  bench/  eval/  test-pages/   data (tokens, prices, ground truth, labels, fixtures)
 plugin/  .claude-plugin/              Claude Code plugin: commands, skill, hooks, manifests
 scripts/quality|eval|dev              tools for maintainers, not part of the product
@@ -57,7 +58,7 @@ adds `stage.start` / `stage.end` with cost. The bus writes every event to `runs/
 
 Because every surface derives from events, none of them can show something that did not happen. Nothing on screen is scripted.
 
-## Files a run leaves behind (`runs/<name>-<timestamp>/`)
+## Files a run leaves behind (`runs/<name>-<timestamp>/`; from the Claude Code plugin: `<project>/.mole/runs/`, which ignores itself in git)
 
 | File | What it is |
 | :- | :- |
@@ -66,7 +67,7 @@ Because every surface derives from events, none of them can show something that 
 | `events.jsonl` | Meter stages with time and cost (the dashboard tails this) |
 | `decisions.jsonl` | every Jev/Claude decision with confidence, gate and cost |
 | `escalations.jsonl` | picker fallbacks (Jev unsure/failed) |
-| `light.png` `dark.png` `step-NN.png` | screenshots, taken with the overlay hidden |
+| `light.png` `dark.png` `step-NN.png` | full-page screenshots, taken with the overlay hidden (no `dark.png` when the page has no dark mode) |
 | `video/` | with `--record` |
 
 Set `MOLE_RUNS_DIR` to put runs elsewhere (tests do).

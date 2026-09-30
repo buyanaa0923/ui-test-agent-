@@ -1,7 +1,7 @@
 {
   "name": "mole-agent",
-  "version": "0.3.0",
-  "description": "Mole digs up UI bugs before your users do: deterministic design-system checks, click-through testing, and a Jev to Claude to human judging ladder, measured.",
+  "version": "0.4.0",
+  "description": "Mole digs up UI bugs before your users do: checks your running app against your design and modern design practice, points every defect at its file:line, and judges the doubtful ones with a Jev to Claude to human ladder.",
   "type": "module",
   "bin": {
     "mole": "bin/mole.mjs"

@@ -5,7 +5,7 @@ import { outputOptions, browserOptions, modelOptions, designOptions, sourceOpts,
 
 export default {
   name: 'dig',
-  summary: 'Scan a page for design-system defects (light + dark)',
+  summary: 'Check a page against the design contract (light, and dark when the page has it)',
   usage: 'mole dig <url> [options]',
   positionals: 1,
   options: {
