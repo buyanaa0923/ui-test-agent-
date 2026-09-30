@@ -45,7 +45,8 @@ The user can also run `/mole:dig`, `/mole:tunnel`, `/mole:watch`, `/mole:design`
    the spot and check it renders that element (compare the text / classes), and look at `alternatives` if it does not.
    No location: search for the element's id, classes or text yourself. Then fix it with the finding's `fix` hint, using
    the project's tokens (the contract's colours, type scale, radius), not new literal values.
-3. `mole_dig` again with the same arguments. A defect that is gone in the re-run is evidence; a claim is not.
+3. `mole_dig` again with the same arguments but `watch: false` (the user already watched the first run; a re-check
+   without the paced tour is several times faster). A defect that is gone in the re-run is evidence; a claim is not.
 4. At most two rounds; then report what is fixed, what is left, and why.
 
 When the user did not ask for changes, report and offer to fix instead.

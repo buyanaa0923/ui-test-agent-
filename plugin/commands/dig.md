@@ -21,7 +21,8 @@ Then report back in this shape, short and scannable:
 3. If defects were found:
    - with the word `fix`, or when you just built or changed this page yourself in this conversation: open each defect's
      location (for `medium` / `low` confidence, confirm the spot renders that element, else try its `alternatives` or
-     search for its id/classes/text), fix it using the tool's fix hint and the project's tokens,
+     search for its id/classes/text), fix it using the tool's fix hint and the project's tokens, re-check with
+     `watch: false` (faster; the user saw the first run),
      then run `mole_dig` again with the same arguments and show before → after. Stop after two rounds and report what is left.
    - otherwise: offer to fix them. Do not start editing until the user says yes.
 
