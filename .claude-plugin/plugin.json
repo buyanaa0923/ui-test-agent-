@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "mole",
+  "displayName": "Mole",
+  "version": "0.3.0",
+  "description": "Digs up UI bugs before your users do: design-system checks, click-through testing, and a Jev to Claude to human judging ladder, with a live browser overlay.",
+  "author": { "name": "Mole contributors" },
+  "license": "ISC",
+  "keywords": ["ui-testing", "design-system", "accessibility", "playwright", "qa"],
+  "commands": ["./plugin/commands/"],
+  "skills": ["./plugin/skills/"],
+  "hooks": "./plugin/hooks.json",
+  "mcpServers": {
+    "mole": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/mole.mjs", "mcp"]
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "mole",
+  "owner": { "name": "Mole contributors" },
+  "metadata": { "description": "Mole: the UI bug-digging agent" },
+  "plugins": [
+    {
+      "name": "mole",
+      "source": "./",
+      "description": "Digs up UI bugs before your users do. Slash commands, an MCP server and a skill for Claude Code."
+    }
+  ]
+}
