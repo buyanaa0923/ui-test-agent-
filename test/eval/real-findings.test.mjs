@@ -82,3 +82,8 @@ test('since applies to design runs and flowSince to flow runs: they are independ
   const recs = buildRecords([flow, design], { ...OPTS, since: '2026-09-29T23:00:00Z', flowSince: '2026-09-29T22:15:00Z' });
   assert.deepEqual(recs.map((r) => r.source.kind), ['flow']); // design (22:00) is before its own cutoff (23:00); flow (22:30) is after its cutoff (22:15)
 });
+test('a flow report that also design-checked its pages contributes only its flow findings (Hefesto antd pages stay out)', () => {
+  const flow = { key: 'button:Save|dead-click', rule: 'dead-click', severity: 'medium', element: 'button "Save"', text: 'Save', mode: 'flow', detail: 'click produced no visible change', step: 2 };
+  const recs = buildRecords([run('t', 'http://localhost:5181/', [flow, f({ page: '/' })], { kind: 'flow' })], OPTS);
+  assert.deepEqual(recs.map((r) => r.finding.rule), ['dead-click']);
+});

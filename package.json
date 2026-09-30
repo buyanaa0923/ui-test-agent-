@@ -29,6 +29,7 @@
     "smoke": "node scripts/quality/smoke.mjs",
     "bench": "node scripts/quality/bench.mjs",
     "determinism": "node scripts/quality/determinism.mjs",
+    "consistency": "node scripts/quality/consistency.mjs",
     "evidence": "node scripts/quality/evidence.mjs",
     "eval:jev": "node scripts/eval/eval-jev.mjs",
     "eval:replay": "node scripts/eval/eval-jev.mjs --replay",

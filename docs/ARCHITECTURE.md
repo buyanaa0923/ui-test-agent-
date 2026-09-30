@@ -27,6 +27,7 @@ src/
     overlay/         in-page overlay (inject.js) + the Node side that drives it
     dashboard/       local web dashboard + scorecard
   engine/            what a run DOES: dig, tunnel, browser, guard, design rules,  -> core, models. Never src/ui or src/cli
+                     measure.mjs (design-check the loaded page: shared by dig and by tunnel on every page it reaches),
                      design contract (contract.mjs), source mapping (locate.mjs)
   models/            Jev, Claude, the trust ladder (cascade), output validation   -> core
   eval/              measurement: metrics, labelled real set, scorecard data      -> core, models

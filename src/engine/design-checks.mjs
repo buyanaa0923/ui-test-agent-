@@ -9,8 +9,9 @@ export function loadTokens(file) {
 }
 
 // ignore: CSS selectors whose elements (and descendants) are out of scope, e.g. a third-party widget.
-export async function collect(page, { ignore = [] } = {}) {
-  return page.evaluate((ignore) => {
+// within: a CSS selector; only elements inside it are measured (tunnel: a dialog or tab panel). Numbering (idx) is unchanged.
+export async function collect(page, { ignore = [], within = null } = {}) {
+  return page.evaluate(({ ignore, within }) => {
     for (const sel of ignore) { try { document.querySelector(sel); } catch { throw new Error(`design contract: ignore entry "${sel}" is not a valid CSS selector`); } }
     const ignoreSel = ignore.join(',');
     const cv = document.createElement('canvas');
@@ -121,6 +122,7 @@ export async function collect(page, { ignore = [] } = {}) {
       idx++;
       if (skip.has(el.tagName.toUpperCase())) continue;
       if (ignoreSel && el.closest(ignoreSel)) continue;
+      if (within && !el.closest(within)) continue;
       const cs = getComputedStyle(el);
       const r = el.getBoundingClientRect();
       const visible = cs.display !== 'none' && cs.visibility !== 'hidden' && cs.opacity !== '0' && r.width > 0 && r.height > 0;
@@ -193,12 +195,31 @@ export async function collect(page, { ignore = [] } = {}) {
         // The real line box: the declared value, or for "normal" the measured height per line.
         lineHeight: cs.lineHeight !== 'normal' ? px(cs.lineHeight) : bLines ? +((el.clientHeight - padY) / bLines).toFixed(2) : null,
         spacing: [cs.paddingTop, cs.paddingRight, cs.paddingBottom, cs.paddingLeft, cs.rowGap, cs.columnGap].map((v) => px(v)),
+        // How the element is styled, beyond the tokens: what the style fingerprint (engine/fingerprint.mjs) compares
+        // across pages. No rule reads it.
+        look: (() => {
+          const pr = el.parentElement?.getBoundingClientRect();
+          const ls = cs.letterSpacing === 'normal' ? 0 : px(cs.letterSpacing);
+          return {
+            bgAlpha: rgba(cs.backgroundColor)[3],
+            // how light its own fill is (0 black .. 1 white): a white secondary button is not a "filled" surface
+            bgLight: (() => { const c = rgba(cs.backgroundColor); return +((0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255).toFixed(2); })(),
+            border: ['Top', 'Right', 'Bottom', 'Left'].filter((k) => px(cs[`border${k}Width`]) > 0 && cs[`border${k}Style`] !== 'none').length,
+            shadow: !!cs.boxShadow && cs.boxShadow !== 'none',
+            gradient: /gradient\(/.test(cs.backgroundImage || ''),
+            // centred by text-align, or a narrower block sitting in the middle of its parent
+            centered: hasText && (cs.textAlign === 'center' || (!!pr && cs.display !== 'inline' && r.width < pr.width * 0.8 && Math.abs(r.x + r.width / 2 - (pr.x + pr.width / 2)) < 3)),
+            tracking: +(ls / (px(cs.fontSize) || 16)).toFixed(3),
+            upper: cs.textTransform === 'uppercase',
+            viewportShare: +(r.width / innerWidth).toFixed(2),
+          };
+        })(),
       });
       if (out.length >= 4000) break;
     }
     st.remove();
     return out;
-  }, ignore);
+  }, { ignore, within });
 }
 
 const lum = (c) => {
