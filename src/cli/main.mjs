@@ -6,6 +6,7 @@ import { help, commandHelp } from './help.mjs';
 import { NotRunError, EXIT } from '../core/errors.mjs';
 import { BudgetExceeded } from '../core/resilience.mjs';
 import { version } from '../core/version.mjs';
+import { ContractError } from '../engine/contract.mjs';
 
 export async function main(argv) {
   const [name, ...rest] = argv;
@@ -30,6 +31,9 @@ export async function main(argv) {
     return await cmd.run(parsed);
   } catch (e) {
     if (e instanceof NotRunError) { process.stderr.write(`NOT RUN: ${e.problem}\nNothing was tested.\n`); return EXIT.NOT_RUN; }
+    if (e instanceof ContractError) { process.stderr.write(`mole ${name}: design contract: ${e.message}
+Nothing was tested.
+`); return 64; }
     if (e instanceof BudgetExceeded) { process.stderr.write(`STOPPED: ${e.message}\n`); return EXIT.NOT_RUN; }
     process.stderr.write(`mole ${name}: ${e.stack || e.message}\n`);
     return EXIT.NOT_RUN; // an internal failure also means nothing trustworthy was tested

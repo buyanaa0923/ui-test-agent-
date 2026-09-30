@@ -33,7 +33,7 @@ export function reduce(s, e) {
   const st = { ...s, t: e.t ?? s.t };
   switch (e.type) {
     case 'run.start':
-      return { ...st, command: e.command, url: e.url, runId: e.runId, runDir: e.runDir, triage: e.triage || 'none', picker: e.picker || null, riskScreen: !!e.riskScreen, max: e.max ?? null, modes: e.modes || [], phase: 'loading', startedAt: e.t ?? 0,
+      return { ...st, command: e.command, url: e.url, runId: e.runId, runDir: e.runDir, triage: e.triage || 'none', picker: e.picker || null, riskScreen: !!e.riskScreen, max: e.max ?? null, modes: e.modes || [], contract: e.contract || null, phase: 'loading', startedAt: e.t ?? 0,
         steps: e.command === 'dig'
           ? [{ id: 'load', label: 'Dig in', status: 'run' }, ...(e.modes || []).map((m) => ({ id: m, label: m === 'dark' ? 'Dark' : m === 'light' ? 'Light' : m, status: 'wait' })), ...(e.triage && e.triage !== 'none' ? [{ id: 'judge', label: 'Sniff', status: 'wait' }] : [])]
           : [{ id: 'load', label: 'Dig in', status: 'run' }, { id: 'tunnel', label: 'Tunnel', status: 'wait' }] };
@@ -49,7 +49,7 @@ export function reduce(s, e) {
         phase: isLast && st.triage !== 'none' ? 'judging' : st.phase };
     }
     case 'finding':
-      return { ...st, findings: [...st.findings, { key: e.key, rule: e.rule, severity: e.severity, element: e.element, detail: e.detail, mode: e.mode, verdict: null, by: 'rule', confidence: null, ms: null, pending: null }] };
+      return { ...st, findings: [...st.findings, { key: e.key, rule: e.rule, severity: e.severity, element: e.element, where: e.where || null, detail: e.detail, mode: e.mode, verdict: null, by: 'rule', confidence: null, ms: null, pending: null }] };
     case 'decision': {
       if (e.kind !== 'triage') return st;
       if (e.by === 'jev') {

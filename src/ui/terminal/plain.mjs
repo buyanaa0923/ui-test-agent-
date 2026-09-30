@@ -14,11 +14,11 @@ export function startPlain(bus, { stream = process.stdout, theme: t, pricing = n
   const off = bus.on((e) => {
     state = reduce(state, e);
     switch (e.type) {
-      case 'run.start': out(`${t.brand(t.sym.dig)} ${t.brand(t.bold('MOLE'))} ${e.command} ${e.url}${e.triage && e.triage !== 'none' ? t.mute(`  (${e.triage === 'cascade' ? 'Jev → Claude → human' : 'Claude only'})`) : e.command === 'dig' ? t.mute('  (rules only)') : ''}`); break;
+      case 'run.start': out(`${t.brand(t.sym.dig)} ${t.brand(t.bold('MOLE'))} ${e.command} ${e.url}${e.triage && e.triage !== 'none' ? t.mute(`  (${e.triage === 'cascade' ? 'Jev → Claude → human' : 'Claude only'})`) : e.command === 'dig' ? t.mute('  (rules only)') : ''}${e.contract ? t.mute(`  design: ${e.contract.name} · ${e.contract.platform}`) : ''}`); break;
       case 'page.loaded': out(`${t.pass(t.sym.ok)} loaded ${e.elements} elements${e.ms ? t.mute(' in ' + fmtMs(e.ms)) : ''}`); break;
       case 'mode.done': out(`${t.pass(t.sym.ok)} ${e.mode}: ${e.elements} checked, ${e.findings} nugget${e.findings === 1 ? '' : 's'}`); break;
       case 'note': out(`${t.faint('note: ' + e.message)}`); break;
-      case 'finding': { const k = findingKey(e); if (seen.has(k)) break; seen.add(k); out(`${t.sev(e.severity, t.sym.dot)} ${t.sev(e.severity, `[${e.severity}]`)} ${e.rule} ${t.mute(truncate(e.element, 28))} ${truncate(e.detail, 90)}`); break; }
+      case 'finding': { const k = findingKey(e); if (seen.has(k)) break; seen.add(k); out(`${t.sev(e.severity, t.sym.dot)} ${t.sev(e.severity, `[${e.severity}]`)} ${e.rule} ${t.mute(truncate(e.element, 28))} ${truncate(e.detail, 90)}${e.where?.file ? t.brand(`  → ${e.where.file}${e.where.line ? ':' + e.where.line : ''}${e.where.confidence === 'low' ? ' (?)' : ''}`) : ''}`); break; }
       case 'decision':
         if (e.kind !== 'triage') break;
         if (e.event === 'jev_failed') out(`  ${t.mute(t.sym.right)} ${t.by('jev', 'Jev')} unavailable, escalating to ${t.by('claude', 'Claude')}`);

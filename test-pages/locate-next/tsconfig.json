@@ -1,0 +1,9 @@
+{
+  // comments and globs like "**/*.ts" must not break reading this
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@/*": ["./*"] }, /* alias used by every import */
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "old.legacy"],
+}

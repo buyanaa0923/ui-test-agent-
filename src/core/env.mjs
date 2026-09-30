@@ -28,4 +28,17 @@ export function loadEnv(file, target = process.env) {
   return set;
 }
 
+// Settings that arrive from the Claude Code plugin (plugin.json userConfig -> MCP server env). An option the user left
+// empty can arrive as the literal "${user_config.x}", which must never be mistaken for a key.
+export function applyPluginEnv(env = process.env) {
+  for (const [k, v] of Object.entries(env)) if (typeof v === 'string' && /^\$\{[^}]*\}$/.test(v.trim())) delete env[k];
+  // How Mole asks Claude about unclear findings: the developer's Claude Code login (no key), an API key, or never.
+  const judge = (env.MOLE_CLAUDE_JUDGE || '').toLowerCase();
+  if (judge === 'login') env.JUDGE_MODE = 'cli';
+  else if (judge === 'api-key') env.JUDGE_MODE = 'api';
+  else if (judge === 'off') { env.JUDGE_MODE = 'off'; delete env.ANTHROPIC_API_KEY; }
+  return env;
+}
+
 if (!process.env.UTA_NO_DOTENV) loadEnv(path.join(ROOT, '.env'));
+applyPluginEnv();

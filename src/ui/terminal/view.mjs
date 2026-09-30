@@ -26,13 +26,14 @@ function headerLines(t, s, o) {
   const title = `${t.brand(t.bold('MOLE'))}  ${t.mute(running ? verb : TAGLINE)}`;
   const mode = s.command === 'tunnel'
     ? `tunnel · picker ${s.picker || 'heuristic'}${s.riskScreen ? ' · risk screen' : ''}${s.max ? ` · up to ${s.max} clicks` : ''}`
-    : `dig · ${s.modes.join('+') || 'light+dark'}${s.triage === 'cascade' ? ' · Jev → Claude → human' : s.triage === 'claude' ? ' · Claude only' : ' · rules only (no model)'}`;
+    : `dig · ${s.modes.join('+') || 'light+dark'}${s.contract ? ` · ${s.contract.platform}` : ''}${s.triage === 'cascade' ? ' · Jev → Claude → human' : s.triage === 'claude' ? ' · Claude only' : ' · rules only (no model)'}`;
   const target = `${t.mute('target')}  ${truncate(s.url || '', o.cols - 34)}`;
   const how = `${t.mute('mode  ')}  ${mode}`;
+  const design = s.contract ? `${t.mute('design')}  ${truncate(s.contract.name, o.cols - 34)}` : null;
   const note = s.notes.length ? t.faint(`note: ${truncate(s.notes.at(-1), o.cols - 34)}`) : null;
-  if (o.compact) return [` ${title}`, ` ${target}`, ` ${how}`, ...(note ? [` ${note}`] : [])];
+  if (o.compact) return [` ${title}`, ` ${target}`, ` ${how}`, ...(design ? [` ${design}`] : []), ...(note ? [` ${note}`] : [])];
 
-  const info = [title, t.faint(t.sym.hr.repeat(Math.min(48, o.cols - 30))), target, how, ...(note ? [note] : [])];
+  const info = [title, t.faint(t.sym.hr.repeat(Math.min(48, o.cols - 30))), target, how, ...(design ? [design] : []), ...(note ? [note] : [])];
   const sprite = renderSprite({ shrink: 2, color: t.color });
   const rows = Math.max(sprite.length, info.length + 1);
   const dirt = running ? t.brand(['· ˙ ·', '˙ · ˙'][o.frame % 2]) : '';
@@ -86,7 +87,9 @@ function nuggetLines(t, s, o) {
     const partial = f.mode !== 'flow' && f.modes.length < Math.max(1, s.modes.length) ? ` ·${f.modes.join('+')}` : '';
     const sev = t.sev(f.severity, padEnd(`${t.sym.dot} ${(f.severity || '').toUpperCase()}`, 9));
     const rule = padEnd(dim ? t.mute(truncate(f.rule, RULE - 1)) : truncate(f.rule, RULE - 1), RULE);
-    const el = padEnd(t.mute(truncate(f.element + partial, EL - 1)), EL);
+    // Where to fix it beats what it is: show file:line (just the file name, to fit) when the source was found.
+    const at = f.where?.file ? `${f.where.file.split('/').pop()}${f.where.line ? ':' + f.where.line : ''}` : null;
+    const el = padEnd(at ? t.brand(truncate(at + partial, EL - 1)) : t.mute(truncate(f.element + partial, EL - 1)), EL);
     const detail = truncate(stripMode(f.detail), wrap ? o.cols - 6 : detailW - 1);
     if (wrap) out.push(` ${sev}${rule}${el} ${verdictCell(t, f, o.frame)}`.replace(/\s+$/, ''), `          ${t.mute(detail)}`);
     else out.push(` ${sev}${rule}${el} ${padEnd(dim ? t.mute(detail) : detail, detailW)} ${verdictCell(t, f, o.frame)}`.replace(/\s+$/, ''));

@@ -1,0 +1,20 @@
+{
+  "desktop": [
+    "tiny|target-size",
+    "fine-print|text-too-small",
+    "small-body|body-text-small",
+    "tight|line-height-tight",
+    "wide|line-length"
+  ],
+  "mobileAlso": [
+    "ok|target-size",
+    "phone|input-font-zoom",
+    "spaced|target-size"
+  ],
+  "neverDesktop": [
+    "spaced|target-size",
+    "inline-link|target-size",
+    "sentence|body-text-small",
+    "sentence|line-height-tight"
+  ]
+}

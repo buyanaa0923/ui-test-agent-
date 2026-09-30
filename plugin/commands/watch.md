@@ -1,15 +1,15 @@
 ---
-description: Watch Mole work in a real browser with the live mole overlay (great for demos)
-argument-hint: <url> [dig|tunnel]
-allowed-tools: Bash(node:*)
+description: Watch Mole work in a real browser with the live Mole panel (great for demos); add "record" for a video
+argument-hint: "<url> [dig|tunnel] [mobile] [record]"
+allowed-tools: mcp__plugin_mole_mole__mole_dig, mcp__plugin_mole_mole__mole_tunnel
 ---
 
-Open the live view for `$ARGUMENTS` by running this in the terminal (the browser opens on the user's screen):
+Open the live view for `$ARGUMENTS`: a browser window opens on the user's screen and the Mole panel shows every step as
+it happens (the laser sweep over each checked element, red boxes with the rule on each defect, the running feed of who
+decided what).
 
-```
-node "${CLAUDE_PLUGIN_ROOT}/bin/mole.mjs" <dig|tunnel> <url> --watch --plain
-```
+- The first word is the URL. `dig` (default) calls `mole_dig`; `tunnel` calls `mole_tunnel` (the mole walks to each
+  control and shows the safety screen's decision).
+- Always pass `watch: true`. Pass `record: true` if `record` is given, and `platform: "mobile"` (dig only) if `mobile` is given.
 
-- The first word of the arguments is the URL. The second word picks the mode: `dig` (default) scans every element and shows the laser sweep; `tunnel` walks the mole to each control and shows Jev's or Claude's decision on it.
-- Add `--record` to save a video of the run in its run folder.
-- The command exits 0 when clean, 1 when defects were found, 2 when nothing could be tested. Tell the user the outcome and where the run folder is.
+Afterwards tell the user the verdict, the run folder, and the video path if one was recorded.

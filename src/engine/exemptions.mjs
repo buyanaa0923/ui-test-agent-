@@ -1,6 +1,7 @@
 // Exemptions that follow from structural facts, not judgement. These never go to a model: a model can be wrong
 // about them, a rule cannot. Each one is a documented accessibility principle.
-const VISUAL = new Set(['contrast', 'text-overflow', 'text-truncated-no-title', 'radius-scale', 'button-height', 'button-font-size', 'button-text-wrap', 'font-family', 'raw-color-literal']);
+const VISUAL = new Set(['contrast', 'text-overflow', 'text-truncated-no-title', 'radius-scale', 'button-height', 'button-font-size', 'button-text-wrap', 'font-family', 'raw-color-literal',
+  'target-size', 'text-too-small', 'body-text-small', 'line-height-tight', 'line-length', 'type-scale', 'input-font-zoom', 'spacing-grid']);
 const NAME = new Set(['button-unnamed', 'control-unlabeled']);
 
 // f: anything with { srOnly, disabled, ariaHidden, describedBy } (an element's facts or a finding's ctx)

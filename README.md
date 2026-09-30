@@ -13,9 +13,49 @@ only sees the doubtful ones. Every run is timed, costed and replayable.
 ```bash
 mole dig http://localhost:5200/dashboard            # what's wrong on this page?
 mole dig <url> --watch                              # the same, in a real browser, live
+mole dig <url> --platform mobile                    # the phone layout: 44px targets, 16px body text, iOS zoom
 mole tunnel <url>                                   # do its buttons actually work?
+mole design show                                    # which design contract applies here, and which rules are on
 mole ci --urls urls.txt --out evidence/runs/<id>    # pipeline gate: exit 0 clean · 1 defects · 2 not run
 ```
+
+## It checks against *your* design
+
+Mole knows modern design practice out of the box (the built-in [`modern-web`](config/packs/modern-web.md) pack:
+WCAG contrast and target size, readable type, line height and line length, iOS input zoom, each with its source), and
+adapts to any project through a **`DESIGN.md`** in the repo:
+
+````markdown
+# Design: Acme Bank
+
+```mole
+extends: modern-web
+fonts: [Inter]
+colors: { primary: "#0f766e", ink: "#0f172a", surface: "#ffffff" }
+type: { scale: [12, 14, 16, 20, 24, 32], body-min: { desktop: 14, mobile: 16 } }
+radius: [0, 4, 8, 12, 9999]
+ignore: [".ant-*"]            # third-party widgets are out of scope
+rules: { line-length: off }   # off | low | medium | high
+```
+
+Calm, dense data screens for analysts.
+````
+
+The block is what Mole measures; the prose is for people. `mole design init` writes a starter, `/mole:design` in Claude
+Code drafts it from your Tailwind config and tokens, and `mole design show` prints exactly what will be enforced. Without
+a `DESIGN.md`, Mole uses the built-in NetOS contract and says so on every run. Full reference:
+[`docs/DESIGN-CONTRACT.md`](docs/DESIGN-CONTRACT.md).
+
+## Every defect points at its source
+
+```text
+● [high] control-unlabeled input.field-input form control has no label or aria-label  → src/components/LoginForm.tsx:8
+```
+
+Exact when the dev build knows (React 18 `_debugSource`, Vue `__file`, inspector-plugin attributes, `data-mole-src`);
+otherwise a scored search of your source by id, aria-label, text (through i18n keys too), classes and surroundings.
+Each location carries its confidence, and rivals when two places look alike; with no good evidence there is no location
+rather than a guess. [`docs/SOURCE-MAPPING.md`](docs/SOURCE-MAPPING.md).
 
 ## See it work
 
@@ -34,7 +74,17 @@ with the rule on them, and the mole keeps a running feed of who decided what.
 
 Everything on screen is driven by real events from the run. Nothing is scripted; add `--record` for a video.
 
-## Quick start
+## Install in Claude Code (Mac or Windows)
+
+```text
+/plugin marketplace add buyanaa0923/ui-test-agent-
+/plugin install mole@mole
+```
+
+Needs Node 20+ and Chrome or Edge. No key is needed; optional keys are stored in your OS keychain. Step by step, with
+updates and troubleshooting: [`INSTALL.md`](INSTALL.md).
+
+## Quick start (terminal)
 
 ```bash
 npm ci && npx playwright install chromium     # an installed Chrome or Edge works too
@@ -44,7 +94,7 @@ mole doctor                                   # ticks, warnings and the exact fi
 mole dig http://localhost:3000
 ```
 
-No keys? Mole still runs its 11 deterministic checks for free (`--no-model`). With both keys it uses the ladder by default.
+No keys? Mole still runs every deterministic check for free (`--no-model`). With both keys it uses the ladder by default.
 
 ## Use it from Claude Code
 
@@ -57,19 +107,22 @@ This repository is a Claude Code plugin **and** an MCP server:
 
 | You get | What it does |
 | :- | :- |
-| `/mole:dig <url>` | scan a page, summarise the defects, offer to fix them |
+| `/mole:dig <url> [mobile] [fix]` | scan a page with the live Mole panel on screen; with `fix`, Claude fixes the defects and re-digs to prove it |
+| `/mole:design` | draft this project's `DESIGN.md` from its tokens / Tailwind config |
 | `/mole:tunnel <url>` | click through controls, report dead buttons / JS errors / failed requests |
-| `/mole:watch <url>` | open the live browser view (great for showing someone) |
+| `/mole:watch <url> [record]` | open the live browser view (great for showing someone); `record` saves a video |
 | `/mole:doctor` | is this machine ready? |
-| MCP tools `mole_dig` `mole_tunnel` `mole_doctor` `mole_report` | Claude calls them itself after changing UI; structured results, progress streamed |
-| the `mole` skill | teaches Claude when to test, how to read results, and that **NOT RUN is never a pass** |
+| MCP tools `mole_dig` `mole_tunnel` `mole_doctor` `mole_report` | Claude calls them itself after changing UI; `watch: true` opens the live panel on your screen, `design` / `platform` pick the contract; every finding comes with its source (WCAG, HIG, your design) and a fix hint |
+| the `mole` skill | teaches Claude when to test, the find → fix → re-dig loop, and that **NOT RUN is never a pass** |
+
+Set `MOLE_WATCH=1` to make every Claude-initiated run show the panel; `MOLE_HEADLESS=1` never opens a window (CI).
 
 Without the plugin: `claude mcp add mole -- node /path/to/repo/bin/mole.mjs mcp`.
 
 ## How it decides
 
 ```
- page ──▶ 11 deterministic rules (measured from painted pixels: contrast, font, size, labels, overflow, radius, colours)
+ page ──▶ deterministic rules from the design contract (measured on the live page: contrast, targets, type, labels, overflow, tokens)
               │  a finding = a fact with a measurement, e.g. "contrast 4.43:1, needs 4.5:1"
               ▼
           Jev  (fast, cheap, calibrated)  ── confident? ──▶ settled

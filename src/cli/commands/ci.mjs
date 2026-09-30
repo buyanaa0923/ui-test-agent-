@@ -8,10 +8,11 @@ import { EXIT } from '../../core/errors.mjs';
 import { stamp } from '../../core/stamp.mjs';
 import { P } from '../../core/paths.mjs';
 import { dig } from '../../engine/dig.mjs';
+import { resolveContract, contractSummary } from '../../engine/contract.mjs';
 import { tunnel } from '../../engine/tunnel.mjs';
 import { detectTheme, bannerLines, version } from '../../ui/terminal/index.mjs';
 import { fmtMs, fmtUsd, truncate, padEnd } from '../../ui/terminal/theme.mjs';
-import { outputOptions, modelOptions, resolveTriage, num } from '../options.mjs';
+import { outputOptions, modelOptions, designOptions, sourceOpts, resolveTriage, num } from '../options.mjs';
 
 const readUrls = (file) => fs.readFileSync(file, 'utf8').split('\n').map((l) => l.replace(/#.*/, '').trim()).filter(Boolean);
 const worst = (codes) => (codes.includes(EXIT.NOT_RUN) ? EXIT.NOT_RUN : codes.includes(EXIT.DEFECTS) ? EXIT.DEFECTS : EXIT.PASS);
@@ -39,7 +40,7 @@ export default {
     'storage-state': { type: 'string', description: 'Playwright storageState file for pages behind login' },
     'sso-button': { type: 'string', description: "regex for the app's own sign-in button" },
     'max-usd': { type: 'string', description: 'hard stop on model spend per page in USD' },
-    ...modelOptions, ...outputOptions,
+    ...designOptions, ...modelOptions, ...outputOptions,
   },
   async run({ values }) {
     if (values['no-color']) process.env.NO_COLOR = '1';
@@ -52,15 +53,19 @@ export default {
     const evidenceDir = path.resolve(values.out || path.join('evidence', 'runs', id));
     fs.mkdirSync(evidenceDir, { recursive: true });
     const triage = resolveTriage(values);
+    const contract = resolveContract({ design: values.design || null, platform: values.platform || null }); // once: every page is held to the same contract
     const shared = { storageState: values['storage-state'] || process.env.UTA_STORAGE_STATE || null, ssoButton: values['sso-button'] || process.env.UTA_SSO_BUTTON || null, maxUsd: values['max-usd'] != null ? num(values['max-usd']) : undefined };
 
     out(bannerLines(t, { version: version() }).join('\n'));
-    out(`  ${t.bold('ci')} ${t.mute(`· ${urls.length} page${urls.length === 1 ? '' : 's'} · ${triage === 'cascade' ? 'Jev → Claude → human' : triage === 'claude' ? 'Claude only' : 'rules only'}${values.tunnel ? ' · + click-through' : ''}`)}\n`);
+    out(`  ${t.bold('ci')} ${t.mute(`· ${urls.length} page${urls.length === 1 ? '' : 's'} · ${triage === 'cascade' ? 'Jev → Claude → human' : triage === 'claude' ? 'Claude only' : 'rules only'}${values.tunnel ? ' · + click-through' : ''}`)}`);
+    out(`  ${t.mute(`design: ${contract.name} · ${contract.platform}`)}`);
+    for (const n of contract.notes) out(`  ${t.faint(`note: ${n}`)}`);
+    out();
 
     const pages = [];
     for (const [i, url] of urls.entries()) {
       const label = `page-${String(i + 1).padStart(2, '0')}`;
-      const runs = [await dig({ url, name: label, triage, ...shared }, { bus: new EventBus() })];
+      const runs = [await dig({ url, name: label, triage, contract, ...sourceOpts(values), ...shared }, { bus: new EventBus() })];
       if (values.tunnel && runs[0].status !== 'not_run') runs.push(await tunnel({ url, name: `${label}-flow`, max: num(values.max, 12), allowOrigins: values['allow-origin'] || [], ...shared }, { bus: new EventBus() }));
       for (const r of runs) copyEvidence(r, path.join(evidenceDir, path.basename(r.runDir)));
       const exitCode = worst(runs.map((r) => r.exitCode));
@@ -73,7 +78,7 @@ export default {
     }
 
     const exitCode = worst(pages.map((p) => p.exitCode));
-    const summary = { tool: stamp(P.root), evidenceId: id, exitCode, verdict: exitCode === 0 ? 'pass' : exitCode === 1 ? 'defects' : 'not_run', rule: 'NOT_RUN is a failure. Exit 0 only when every page was tested and is clean.', triage, pages,
+    const summary = { tool: stamp(P.root, contract), contract: contractSummary(contract), evidenceId: id, exitCode, verdict: exitCode === 0 ? 'pass' : exitCode === 1 ? 'defects' : 'not_run', rule: 'NOT_RUN is a failure. Exit 0 only when every page was tested and is clean.', triage, pages,
       totals: { pages: pages.length, clean: pages.filter((p) => p.exitCode === 0).length, withDefects: pages.filter((p) => p.exitCode === 1).length, notRun: pages.filter((p) => p.exitCode === 2).length, findings: pages.reduce((n, p) => n + p.findings, 0), totalMs: pages.reduce((n, p) => n + p.totalMs, 0), totalUsd: pages.reduce((n, p) => n + p.totalUsd, 0) } };
     fs.writeFileSync(path.join(evidenceDir, 'summary.json'), JSON.stringify(summary, null, 2));
     if (json) process.stdout.write(JSON.stringify(summary) + '\n');

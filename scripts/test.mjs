@@ -10,5 +10,7 @@ const args = process.argv.slice(2);
 const flags = args.filter((a) => a.startsWith('--')); // e.g. --test-reporter=tap
 const given = args.filter((a) => !a.startsWith('--'));
 const files = given.length ? given : walk(path.join(ROOT, 'test'));
-const r = spawnSync(process.execPath, ['--test', '--test-timeout=120000', ...flags, ...files], { cwd: ROOT, stdio: 'inherit', env: { ...process.env, UTA_NO_DOTENV: '1' } });
+// Blank the model keys too: a parent that already loaded .env (npm run evidence imports src/core) must not hand them down.
+const noKeys = { TYPESAFE_API_KEY: '', ANTHROPIC_API_KEY: '', JUDGE_MODE: '', PICKER: '', MOLE_WATCH: '', MOLE_DESIGN: '' };
+const r = spawnSync(process.execPath, ['--test', '--test-timeout=120000', ...flags, ...files], { cwd: ROOT, stdio: 'inherit', env: { ...process.env, ...noKeys, UTA_NO_DOTENV: '1' } });
 process.exit(r.status ?? 1);

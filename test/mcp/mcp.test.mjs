@@ -65,3 +65,17 @@ test('MCP: protocol errors are answered, not crashes', async () => {
   assert.equal(bad.isError, true, 'path traversal in run name is neutralised');
   await c.close();
 });
+
+test('MCP: dig takes a design contract and a platform; findings carry their source and a fix', async () => {
+  const c = client(); await c.call('initialize', { protocolVersion: '2025-06-18' });
+  const schema = (await c.call('tools/list')).result.tools.find((t) => t.name === 'mole_dig').inputSchema.properties;
+  for (const p of ['design', 'platform', 'watch', 'record']) assert.ok(schema[p], `mole_dig accepts ${p}`);
+  const r = (await c.call('tools/call', { name: 'mole_dig', arguments: { url: fixture('modern.html'), model: 'none', platform: 'mobile', modes: ['light'] } })).result;
+  assert.equal(r.structuredContent.contract.platform, 'mobile');
+  const zoom = r.structuredContent.nuggets.find((n) => n.rule === 'input-font-zoom');
+  assert.equal(zoom.tier, 'practice'); assert.match(zoom.source, /iOS/); assert.match(zoom.fix, /16px/);
+  assert.match(r.content[0].text, /Design: Mole test pages \(NetOS\) · mobile/); assert.match(r.content[0].text, /source: .* fix: /);
+  assert.match(zoom.location, /^test-pages\/modern\.html:\d+$/); assert.equal(zoom.locationConfidence, 'high');
+  assert.match(r.content[0].text, /at: test-pages\/modern\.html:\d+ \(high\)/, 'Claude is told where to fix it');
+  await c.close();
+});

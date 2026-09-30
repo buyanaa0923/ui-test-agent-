@@ -1,8 +1,9 @@
 // Verdict step: an LLM reads the deterministic findings and decides real / false positive / needs a human,
 // with a one-line fix. The model never invents findings; it only rules on ones the rule engine already produced.
-// Two routes: JUDGE_MODE=api (Anthropic Messages API, needs ANTHROPIC_API_KEY) or JUDGE_MODE=cli (company `claude -p` runner).
+// Two routes: JUDGE_MODE=api (Anthropic Messages API, needs ANTHROPIC_API_KEY) or JUDGE_MODE=cli (the developer's own
+// Claude Code login through `claude -p`: no key to hand out).
 import '../core/env.mjs';
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { withRetry, CircuitBreaker } from '../core/resilience.mjs';
 import { parseJson, validateVerdicts, validatePick } from './schema.mjs';
 
@@ -20,7 +21,7 @@ Never add findings that are not in the input. Reply with ONLY a JSON array, one 
 
 async function viaApi(prompt, system = SYSTEM) {
   const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error('ANTHROPIC_API_KEY is not set');
+  if (!key) throw new Error('Claude is not configured: ANTHROPIC_API_KEY is not set (or use your Claude Code login: JUDGE_MODE=cli)');
   const res = await fetch(`${process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com'}/v1/messages`, {
     method: 'POST',
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
@@ -32,12 +33,30 @@ async function viaApi(prompt, system = SYSTEM) {
   return { text, usage: { model: MODEL.replace(/-\d{8}$/, ''), inputTokens: body.usage?.input_tokens ?? 0, outputTokens: body.usage?.output_tokens ?? 0 } };
 }
 
-function viaCli(prompt) {
-  const r = spawnSync('claude', ['-p', '--output-format', 'json', '--append-system-prompt', SYSTEM], { input: prompt, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
-  if (r.error || r.status !== 0) throw new Error(`claude -p failed: ${r.error?.message || r.stderr?.slice(0, 200)}`);
-  const out = JSON.parse(r.stdout);
-  return { text: out.result ?? '', usage: { model: 'claude-cli', inputTokens: 0, outputTokens: 0 } };
+// The developer's own Claude Code login, no API key: `claude -p`. Async, so the live panel keeps moving while Claude
+// thinks. The instructions travel on stdin with the question (no quoting problems on Windows, where an npm install is
+// claude.cmd and needs a shell), and --strict-mcp-config keeps the nested session from starting MCP servers (Mole included).
+export function viaCli(prompt, system = SYSTEM, { timeoutMs = 180000, bin = process.env.MOLE_CLAUDE_BIN || 'claude' } = {}) {
+  return new Promise((resolve, reject) => {
+    const p = spawn(bin, ['-p', '--output-format', 'json', '--strict-mcp-config'], { shell: process.platform === 'win32', windowsHide: true, env: { ...process.env, MOLE_WATCH: '' } });
+    let out = '', err = '';
+    const timer = setTimeout(() => { p.kill(); reject(new Error(`claude -p gave no answer within ${timeoutMs / 1000}s`)); }, timeoutMs);
+    p.stdout.on('data', (d) => (out += d)); p.stderr.on('data', (d) => (err += d));
+    p.on('error', (e) => { clearTimeout(timer); reject(new Error(`claude -p could not start: ${e.message}`)); });
+    p.on('close', (code) => {
+      clearTimeout(timer);
+      if (code !== 0) return reject(new Error(`claude -p failed (exit ${code}): ${err.slice(0, 200)}`));
+      try { const o = JSON.parse(out); resolve({ text: o.result ?? '', usage: { model: 'claude-cli', inputTokens: 0, outputTokens: 0 } }); } catch { reject(new Error(`claude -p did not answer in JSON: ${out.slice(0, 120)}`)); }
+    });
+    p.stdin.end(`${system}\n\n---\n\n${prompt}`);
+  });
 }
+
+// Every Claude call goes through here: JUDGE_MODE=cli uses the Claude Code login, anything else the API key.
+const route = async (prompt, system = SYSTEM, mode = process.env.JUDGE_MODE || 'api') => {
+  if (mode === 'off') throw new Error('Claude is not configured: judging is switched off (the finding goes to a person)');
+  return mode === 'cli' ? viaCli(prompt, system) : viaApi(prompt, system);
+};
 
 // findings: [{key, rule, severity, element, text, detail, mode}]; returns findings with .verdict/.reason/.fix added.
 export async function judge(findings, { meter, context = '', mode = process.env.JUDGE_MODE || 'api', send } = {}) {
@@ -51,7 +70,7 @@ export async function judge(findings, { meter, context = '', mode = process.env.
     meter?.assertBudget();
     // One repair attempt if the model answers with malformed or unknown-key JSON, then give up honestly.
     for (let attempt = 0; attempt < 2 && !parsed; attempt++) {
-      res = await breaker.run(() => withRetry(() => (send ? send(prompt) : mode === 'cli' ? viaCli(prompt) : viaApi(prompt))));
+      res = await breaker.run(() => withRetry(() => (send ? send(prompt) : route(prompt, SYSTEM, mode))));
       try {
         const v = validateVerdicts(parseJson(res.text, 'array'), known);
         if (v.ok) parsed = v;
@@ -78,7 +97,7 @@ export async function pickWithClaude({ goal, candidates }, { meter, send } = {})
   const prompt = `Goal: ${goal}\nCandidates (untested controls only):\n${open.map(({ c, i }) => `${i}: ${c.role} "${c.label}"`).join('\n')}\nReply ONLY JSON: {"choice":<index>,"confidence":<0-1>}`;
   meter?.assertBudget();
   const h = meter?.start('escalate-claude');
-  const res = await breaker.run(() => withRetry(() => (send ? send(prompt) : viaApi(prompt))));
+  const res = await breaker.run(() => withRetry(() => (send ? send(prompt) : route(prompt, 'You choose which UI control an automated tester should try next. Reply ONLY with the JSON asked for.'))));
   meter?.end(h, res.usage);
   const v = validatePick(parseJson(res.text, 'object'), candidates.length);
   if (!v.ok) throw new Error(v.errors[0]);
@@ -92,7 +111,7 @@ export async function claudeRisk({ label, context = '' }, { meter, send } = {}) 
   const prompt = `Control label: "${label}"\nContext: ${context || 'none'}`;
   meter?.assertBudget();
   const h = meter?.start('escalate-claude-risk');
-  const res = await breaker.run(() => withRetry(() => (send ? send(prompt) : viaApi(prompt, system))));
+  const res = await breaker.run(() => withRetry(() => (send ? send(prompt) : route(prompt, system))));
   meter?.end(h, res.usage);
   const o = parseJson(res.text, 'object');
   if (typeof o.risky !== 'boolean' || typeof o.confidence !== 'number') throw new Error('bad risk answer from Claude');

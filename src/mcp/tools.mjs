@@ -13,14 +13,24 @@ const str = (d) => ({ type: 'string', description: d });
 const common = {
   storageState: str('Playwright storageState file for pages behind login (a test account, kept outside the repo)'),
   ssoButton: str("Regex for the app's own sign-in button, clicked after each load"),
+  watch: { type: 'boolean', description: "Open a real browser window on the developer's screen with the live Mole overlay while the run happens (slower: each step lingers so a person can follow). Default: the MOLE_WATCH setting, else off" },
+  record: { type: 'boolean', description: 'Save a video of the run in its run folder (with watch, it shows the overlay at human pace)' },
 };
+
+// Watching means a visible browser, a paced run and the overlay attached; the injected loader keeps src/ui out of this layer.
+const wantsWatch = (a) => (a.watch != null ? !!a.watch : /^(1|true|yes|on)$/i.test(process.env.MOLE_WATCH || ''));
+async function watchOpts(a, ctx, pace) {
+  if (!wantsWatch(a) || !ctx.overlay) return { opts: { headed: false, pace: 0 }, attach: null };
+  return { opts: { headed: true, pace }, attach: await ctx.overlay() };
+}
 
 const triageFrom = (model) => resolveTriage({ 'no-model': model === 'none', judge: model === 'claude', cascade: model === 'cascade' });
 
-async function runEngine(engine, kind, opts, onEvent) {
+async function runEngine(engine, kind, opts, ctx, pace) {
   const bus = new EventBus();
-  bus.on((e) => onEvent?.(e));
-  const r = await engine(opts, { bus });
+  bus.on((e) => ctx.onEvent?.(e));
+  const w = await watchOpts(opts, ctx, pace);
+  const r = await engine({ ...opts, ...w.opts, record: !!opts.record }, { bus, attach: w.attach });
   const data = summarize(kind, r);
   return { text: toText(data), data, isError: r.status === 'not_run' };
 }
@@ -28,13 +38,13 @@ async function runEngine(engine, kind, opts, onEvent) {
 export const tools = [
   {
     name: 'mole_dig',
-    description: 'Scan one page for design-system defects (contrast, font, sizing, labels, overflow, radius, raw colours) in light and dark mode, judged by a Jev -> Claude -> human ladder. Returns the distinct defects with severity, the element, the measurement, and who confirmed each. Read-only against the app. Use after changing UI, or to check a page before shipping.',
+    description: "Scan one page against the project's design contract (its design.md, on top of Mole's modern-web best practices) in light and dark mode: contrast, touch-target size, type size / line height / line length, fonts, colours, radius, labels, overflow. Deterministic measurements, optionally judged by a Jev -> Claude -> human ladder. Returns the distinct defects with severity, the element, the measurement, the rule's source (WCAG, HIG, the design) and a fix hint. Read-only against the app. Use after changing UI, or to check a page before shipping.",
     inputSchema: {
       type: 'object', required: ['url'],
-      properties: { url: str('Page URL, e.g. http://localhost:5200/dashboard'), modes: { type: 'array', items: { type: 'string', enum: ['light', 'dark'] }, description: 'Colour modes to check (default both)' }, model: { type: 'string', enum: ['auto', 'none', 'cascade', 'claude'], description: 'auto (default): Jev->Claude when keys are set, else rules only; none: rules only, free' }, ...common },
+      properties: { url: str('Page URL, e.g. http://localhost:5200/dashboard'), design: str("Path to the project's design.md (the design contract). Default: DESIGN.md / design.md / .mole/design.md in the working directory, else Mole's built-in NetOS contract"), root: str("The project's source folder (absolute), so each defect comes back with the file:line to fix. Default: MOLE_SRC_ROOT, else the design.md's project, else the server's working directory"), platform: { type: 'string', enum: ['desktop', 'mobile'], description: "mobile = phone viewport, 44px touch targets, 16px body text, iOS input zoom. Default: the design's own platform, else desktop" }, modes: { type: 'array', items: { type: 'string', enum: ['light', 'dark'] }, description: 'Colour modes to check (default both)' }, model: { type: 'string', enum: ['auto', 'none', 'cascade', 'claude'], description: 'auto (default): Jev->Claude when keys are set, else rules only; none: rules only, free' }, ...common },
     },
     annotations: { title: 'Dig for UI defects', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
-    run: (a, ctx) => runEngine(dig, 'dig', { url: a.url, modes: a.modes?.length ? a.modes : ['light', 'dark'], name: 'mcp-dig', triage: triageFrom(a.model), storageState: a.storageState || process.env.UTA_STORAGE_STATE || null, ssoButton: a.ssoButton || process.env.UTA_SSO_BUTTON || null }, ctx.onEvent),
+    run: (a, ctx) => runEngine(dig, 'dig', { url: a.url, modes: a.modes?.length ? a.modes : ['light', 'dark'], name: 'mcp-dig', triage: triageFrom(a.model), design: a.design || null, platform: a.platform || null, root: a.root || null, storageState: a.storageState || process.env.UTA_STORAGE_STATE || null, ssoButton: a.ssoButton || process.env.UTA_SSO_BUTTON || null, watch: a.watch, record: a.record }, ctx, 900),
   },
   {
     name: 'mole_tunnel',
@@ -44,7 +54,7 @@ export const tools = [
       properties: { url: str('Page URL'), max: { type: 'integer', minimum: 1, maximum: 60, description: 'Maximum clicks (default 12)' }, picker: { type: 'string', enum: ['heuristic', 'jev'], description: 'How the next control is chosen (default heuristic, free)' }, riskScreen: { type: 'boolean', description: 'Force the safety screen on (always on with picker jev)' }, allowOrigins: { type: 'array', items: { type: 'string' }, description: 'Other origins the page legitimately loads from (micro-frontends)' }, ...common },
     },
     annotations: { title: 'Tunnel through controls', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
-    run: (a, ctx) => runEngine(tunnel, 'tunnel', { url: a.url, max: a.max || 12, name: 'mcp-flow', picker: a.picker || 'heuristic', riskScreen: !!a.riskScreen, allowOrigins: a.allowOrigins || [], storageState: a.storageState || process.env.UTA_STORAGE_STATE || null, ssoButton: a.ssoButton || process.env.UTA_SSO_BUTTON || null }, ctx.onEvent),
+    run: (a, ctx) => runEngine(tunnel, 'tunnel', { url: a.url, max: a.max || 12, name: 'mcp-flow', picker: a.picker || 'heuristic', riskScreen: !!a.riskScreen, allowOrigins: a.allowOrigins || [], storageState: a.storageState || process.env.UTA_STORAGE_STATE || null, ssoButton: a.ssoButton || process.env.UTA_SSO_BUTTON || null, watch: a.watch, record: a.record }, ctx, 500),
   },
   {
     name: 'mole_doctor',
