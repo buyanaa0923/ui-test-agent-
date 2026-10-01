@@ -15,7 +15,7 @@ live page; a ladder (**rules -> Jev -> Claude -> a person**) only judges the dou
 | Tool | Use it to |
 | :- | :- |
 | `mole_dig` | scan one page against the design contract, light and dark; `platform: "mobile"` for the phone layout |
-| `mole_tunnel` | click through controls: dead buttons, JS errors, failed requests |
+| `mole_tunnel` | walk the app: follow the pages clicks reach (`depth`, default 2), open dialogs / tabs / accordions (`stateDepth`, default 2), run the `mole_dig` checks on each, and click every control: design defects, dead buttons, broken links, JS errors, failed requests |
 | `mole_doctor` | find out why a run cannot start, and the exact fix |
 | `mole_report` | re-read the previous run without re-running it |
 
@@ -65,5 +65,6 @@ When the user did not ask for changes, report and offer to fix instead.
 - Never claim a pass without a SURFACED verdict from this run.
 - Pages behind login need a saved session (`storageState`, made from a test account and kept outside the repo). Never ask for or type credentials.
 - `mole_tunnel` clicks real controls. Do not point it at production unless the user says so.
+- `forms: "fill"` types obvious test data and sends nothing; use it when the user wants forms checked. `forms: "submit"` **creates records in the app**: use it only when the user explicitly asks for forms to be submitted, and never add a `submitHosts` entry the user did not name. After a submit run, tell the user where the ledger is (`submissions.jsonl` in the run folder) so they can remove the test data.
 - A finding on a third-party widget the team does not style is out of scope: suggest adding it to `ignore` in the DESIGN.md instead of "fixing" it.
 - Never edit the DESIGN.md to make a finding go away unless the user agrees the design itself should change.

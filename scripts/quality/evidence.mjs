@@ -1,4 +1,4 @@
-// One command that refreshes every number the scorecard shows: tests, mutation benchmark, determinism, smoke.
+// One command that refreshes every number the scorecard shows: tests, mutation benchmark, determinism, smoke, style consistency.
 // Model evaluations (eval:jev) are separate because they need keys or a recording.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -17,7 +17,7 @@ const names = [...t.stdout.matchAll(/^(ok|not ok) \d+ - (.+)$/gm)].map((m) => ({
 results.tests = { total: num('tests'), pass: num('pass'), fail: num('fail'), names, at: new Date().toISOString() };
 console.log(`${results.tests.pass}/${results.tests.total} pass`);
 
-for (const [label, script] of [['mutation bench', 'scripts/quality/bench.mjs'], ['determinism', 'scripts/quality/determinism.mjs'], ['smoke', 'scripts/quality/smoke.mjs']]) {
+for (const [label, script] of [['mutation bench', 'scripts/quality/bench.mjs'], ['determinism', 'scripts/quality/determinism.mjs'], ['smoke', 'scripts/quality/smoke.mjs'], ['style consistency', 'scripts/quality/consistency.mjs']]) {
   process.stdout.write(`${label.padEnd(17, ' ')} `);
   const r = run([script]);
   const last = r.stdout.trim().split('\n').filter((l) => /Overall|Determinism|caught/.test(l)).pop() || '(no summary line)';

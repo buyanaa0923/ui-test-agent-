@@ -14,7 +14,8 @@ only sees the doubtful ones. Every run is timed, costed and replayable.
 mole dig http://localhost:3000                      # what's wrong on this page?
 mole dig <url> --watch                              # the same, in a real browser, live
 mole dig <url> --platform mobile                    # the phone layout: 44px targets, 16px body text, iOS zoom
-mole tunnel <url>                                   # do its buttons actually work?
+mole tunnel <url>                                   # walk the app: every page its clicks reach is design-checked, every control clicked
+mole tunnel <url> --forms fill                      # ...and type test data into every form (nothing is sent; --forms submit sends it, dev hosts only)
 mole design show                                    # which design contract applies here, and which rules are on
 mole ci --urls urls.txt --out evidence/runs/<id>    # pipeline gate: exit 0 clean · 1 defects · 2 not run
 ```
@@ -104,7 +105,7 @@ No keys? Mole still runs every deterministic check for free (`--no-model`). With
 | :- | :- |
 | `/mole:dig <url> [mobile] [fix]` | scan a page with the live Mole panel on screen; with `fix`, Claude fixes the defects and re-checks to prove it |
 | `/mole:design` | draft this project's `DESIGN.md` from its tokens / Tailwind config |
-| `/mole:tunnel <url>` | click through controls, report dead buttons / JS errors / failed requests |
+| `/mole:tunnel <url>` | walk the app: follow the pages clicks reach (2 deep by default), open their dialogs, tabs and accordions, design-check each one, report design defects / dead buttons / broken links / JS errors / failed requests |
 | `/mole:watch <url> [record]` | the live browser view for showing someone; `record` saves a video |
 | `/mole:doctor` | is this machine ready? |
 | MCP tools `mole_dig` `mole_tunnel` `mole_doctor` `mole_report` | Claude calls them itself after changing UI; the project, its `DESIGN.md` and its source are found automatically; every finding comes with its measurement, source (WCAG, HIG, your design), fix hint and `file:line` |
@@ -128,7 +129,12 @@ Installed > mole > Configure options; keys go to the OS keychain. Without the pl
 
 - Confirming a defect needs confidence ≥ 0.8; **dismissing needs ≥ 0.9**, because wrongly dismissing a real bug is the costly mistake.
 - The same defect in light and dark is judged once and the verdict is shared: half the model calls.
-- The click-through has a **safety screen** (Jev, then Claude, then fail-safe skip) so it stays away from delete / pay / logout, in English and Mongolian. Nothing is typed or submitted.
+- The click-through design-checks every page it reaches (the same rules as `dig`, measured as the page first renders, before any click; `--no-design` to only click). A shell element that fails on every page is one defect, judged once, listed with the pages it was seen on.
+- It also opens what has no URL: dialogs (and dialogs inside them), tab panels, accordions and menus (`--state-depth`, default 2; `--max-states` per page). Each is reached again by reloading the page and replaying the clicks that open it, tested on its own controls, and design-checked on its own region, so a defect inside a dialog reads `button "Help" in dialog "Add user"`. The same dialog behind twenty table rows is explored once.
+- It compares the pages it reaches with each other (**style consistency**, advisory). A page can pass every design rule (right fonts, colours, spacing) and still look like it came from another site: rounded, shadowed, gradient cards and centred emoji headings on a sharp Swiss grid. Mole fingerprints how each page *composes* its tokens (corner radii, pill buttons, shadows, gradients, emoji, typeface share, heading weight, centring) and flags a page that sits outside every other page, with the numbers: `rounded corners (8px+) on cards and panels: 100% here, 0% on the other pages`. Deterministic, no model; it needs 4+ pages and never changes the exit code. Measured on a seeded benchmark of 148 sites (`npm run consistency`, [`docs/CONSISTENCY.md`](docs/CONSISTENCY.md)).
+- Forms, when asked (`--forms fill | submit`, off by default). `fill` types obvious test data (`Mole test <tag>`, `mole.test+<tag>@example.test`, Mongolian-aware: phone, register number) into each form and checks it takes it: fields that refuse input, errors while typing, a submit button that stays disabled. `submit` also sends it and judges the answer: `submit-server-error` (5xx), `submit-silent-failure` (refused, and the page said nothing), `dead-submit` (nothing happened); a refusal the page shows is not a defect. Submitting creates data, so it only runs against local dev hosts unless you name one (`--submit-host`), at most `--max-submits` (5) per run, never for password, card, account-number or one-time-code forms or a "Pay"-style button, and every submission is written to `submissions.jsonl` so the test data can be found and removed.
+- The click-through follows the pages its clicks reach, breadth first (`--depth`, `--max-pages`, `--max-per-page`; one click budget, `--max`, for the whole run). A click that navigates only counts as working if it lands on a real page: an HTTP error, a blank page, a "not found" page (a SPA's 404 answers 200) or a login wall is a defect on the control that led there. Controls in the app's `nav`/`header`/`footer` are tested once per run, not once per page; links to `/logout`-style paths are never followed; login pages are never explored.
+- The click-through has a **safety screen** (Jev, then Claude, then fail-safe skip) so it stays away from delete / pay / logout, in English and Mongolian. Nothing is typed or submitted: a form's submit button is never clicked, and inside a dialog neither is the button that commits it (Save, Create, Confirm, OK, … and their Mongolian equivalents).
 - Spend is capped per run (`BUDGET_USD`) and every model call is metered, including the safety screen.
 
 ## Exit codes: a contract for pipelines
@@ -157,6 +163,7 @@ Measured on this repository on 2026-09-30 (see `docs/internal/WORK-STATUS.md` fo
 | mutation benchmark | 220 generated pages, one injected defect each: precision 1, recall 1, exact-match 100%, 0.0% false positives on clean pages |
 | determinism | 11/11 pages identical across 20 fresh runs |
 | seeded-bug smoke | 11/11 caught |
+| style consistency | 148 seeded sites (878 pages), one page drifted into another style with the same tokens: recall 0.99, precision 1, 0/36 clean sites flagged; the design rules find 0 defects on the drifted pages. Synthetic: real-site numbers need labels |
 
 The benchmark is synthetic: it proves rule accuracy, not generalisation to real apps. Model accuracy on real findings needs
 human labels (`docs/LABELLING.md`) and is reported as **not yet measured** until then.

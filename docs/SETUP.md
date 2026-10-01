@@ -34,7 +34,7 @@ radius from `config/tokens.json` (`npm run import-tokens -- /path/to/netsecure-d
 mole dig http://localhost:3000 --design ./DESIGN.md --src .   # check a page; --src maps each defect to file:line
 mole dig <url> --watch                                          # the same, in a real browser with the live Mole panel
 mole dig <url> --platform mobile                                # phone viewport: 44px targets, 16px body text, iOS zoom
-mole tunnel <url> --max 20                                      # click through controls: dead buttons, JS errors, failed requests
+mole tunnel <url> --depth 2 --max 40                            # click through controls and the pages they reach: dead buttons, broken links, JS errors, failed requests
 mole ci --urls urls.txt --out evidence/runs/<id>                # pipeline gate: exit 0 clean / 1 defects / 2 not run
 mole replay latest                                              # replay the last run in the terminal, no browser
 mole dashboard                                                  # http://localhost:4173 - run history, cost, judge scorecard

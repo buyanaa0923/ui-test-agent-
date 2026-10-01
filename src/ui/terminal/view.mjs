@@ -32,7 +32,7 @@ function headerLines(t, s, o) {
   const verb = s.command === 'tunnel' ? 'tunnelling through controls' : 'digging up UI bugs';
   const title = `${t.brand(t.bold('MOLE'))}  ${t.mute(running ? verb : TAGLINE)}`;
   const mode = s.command === 'tunnel'
-    ? `tunnel · picker ${s.picker || 'heuristic'}${s.riskScreen ? ' · risk screen' : ''}${s.max ? ` · up to ${s.max} clicks` : ''}`
+    ? `tunnel · picker ${s.picker || 'heuristic'}${s.riskScreen ? ' · risk screen' : ''}${s.max ? ` · up to ${s.max} clicks` : ''}${s.depth ? ` · depth ${s.depth}` : ''}`
     : `dig · ${s.modes.join('+') || 'light+dark'}${s.contract ? ` · ${s.contract.platform}` : ''}${s.triage === 'cascade' ? ' · Jev → Claude → human' : s.triage === 'claude' ? ' · Claude only' : ' · rules only (no model)'}`;
   const target = `${t.mute('target')}  ${truncate(s.url || '', o.cols - 34)}`;
   const how = `${t.mute('mode  ')}  ${mode}`;
@@ -59,7 +59,7 @@ function ladderLines(t, s, o) {
   const total = groups.length;
   const lab = (who, name) => t.by(who, t.bold(padEnd(name, 8)));
   const out = [''];
-  if (s.command === 'tunnel') out.push(` ${lab('rule', 'FOUND')} ${t.bold(String(total))} problem${total === 1 ? '' : 's'} while clicking ${t.mute('(dead buttons, JS errors, failed requests)')}`);
+  if (s.command === 'tunnel') out.push(` ${lab('rule', 'FOUND')} ${t.bold(String(total))} problem${total === 1 ? '' : 's'} ${s.tunnel.checkDesign ? `on ${s.tunnel.pagesEntered} page${s.tunnel.pagesEntered === 1 ? '' : 's'} ${t.mute('(design checks, dead buttons, broken links, JS errors, failed requests)')}` : `while clicking ${t.mute('(dead buttons, broken links, JS errors, failed requests)')}`}`);
   else out.push(` ${lab('rule', 'RULES')} ${t.bold(String(total))} distinct nugget${total === 1 ? '' : 's'} flagged by ${t.mute('deterministic checks')}${s.findings.length !== total ? t.mute(` (${s.findings.length} across ${modesText(s)})`) : ''}`);
   if (s.triage === 'cascade') {
     const p50 = median(s.jev.ms);
@@ -111,6 +111,9 @@ function tunnelLines(t, s, o) {
   const out = [''];
   const denom = Math.max(tn.found, tn.exercised + tn.skipped, 1);
   out.push(` ${t.brand(t.bold(padEnd('TUNNEL', 8)))} ${bar(t, (tn.exercised + tn.skipped) / denom, 20, 'brand')} ${tn.exercised + tn.skipped}/${denom} controls  ${t.mute(`${tn.exercised} clicked · ${tn.skipped} skipped by risk screen`)}${tn.dead ? t.warn(`  ${tn.dead} dead click${tn.dead === 1 ? '' : 's'}`) : ''}`);
+  if (tn.pagesFound || tn.checkDesign) out.push(` ${t.brand(t.bold(padEnd('PAGES', 8)))} ${bar(t, tn.pagesEntered / (tn.pagesFound + 1), 20, 'brand')} ${tn.pagesEntered}/${tn.pagesFound + 1} pages  ${t.mute(`${tn.checkDesign ? `${tn.pagesMeasured} design-checked · ` : ''}now on ${truncate(tn.page || '', 30)}${tn.state ? ` › ${truncate(tn.state, 30)}` : ''}`)}`);
+  if (tn.forms) out.push(` ${t.brand(t.bold(padEnd('FORMS', 8)))} ${tn.formsDone} ${tn.forms === 'submit' ? `filled · ${tn.formsSubmitted} submitted` : 'filled with test data · none sent'}${tn.formsSkipped ? t.mute(` · ${tn.formsSkipped} sensitive, left alone`) : ''}`);
+  if (tn.statesFound) out.push(` ${t.brand(t.bold(padEnd('OPENED', 8)))} ${bar(t, tn.statesEntered / tn.statesFound, 20, 'brand')} ${tn.statesEntered}/${tn.statesFound} ${t.mute('dialogs, tabs and panels explored')}`);
   const c = tn.current;
   if (c) {
     const who = c.by === 'jev' ? 'jev' : c.by === 'claude' ? 'claude' : 'rule';
@@ -119,9 +122,9 @@ function tunnelLines(t, s, o) {
     out.push(` ${t.brand(spin(t, o.frame))} ${t.bold(`#${c.n}`)} ${c.role} ${t.fg('#FFFFFF', `"${truncate(c.label, 30)}"`)}  ${t.mute('picked by')} ${pick}${risk}`);
   }
   for (const r of tn.log.slice(-o.maxSteps)) {
-    const glyph = r.skipped ? t.warn(t.sym.warn) : r.deadClick || r.errors || r.failedRequests ? t.fail(t.sym.bad) : t.pass(t.sym.ok);
-    const what = r.skipped ? t.warn(`skipped · ${r.skipped}`) : r.deadClick ? t.fail('no effect') : r.errors ? t.fail(`${r.errors} JS error${r.errors === 1 ? '' : 's'}`) : r.failedRequests ? t.fail('failed request') : t.mute(r.dialogOpened ? 'opened a dialog' : r.changed ? 'changed the page' : 'ok');
-    out.push(`   ${glyph} ${t.mute(padStart(String(r.n), 2))} ${padEnd(`${r.role || ''} "${truncate(r.label, 28)}"`, 40)} ${what}`);
+    const glyph = r.skipped ? t.warn(t.sym.warn) : r.problem || r.deadClick || r.errors || r.failedRequests ? t.fail(t.sym.bad) : t.pass(t.sym.ok);
+    const what = r.form ? (r.skipped ? t.warn(`left alone · ${r.skipped}`) : r.problem ? t.fail(r.problem) : r.outcome === 'rejected' ? t.mute('refused the test data, and said so') : t.mute(r.outcome === 'submitted' ? `submitted · ${truncate(r.detail || '', 30)}` : 'filled')) : r.skipped ? t.warn(`skipped · ${r.skipped}`) : r.problem ? t.fail(`${r.problem} → ${truncate(r.navigatedTo || '', 24)}`) : r.deadClick ? t.fail('no effect') : r.errors ? t.fail(`${r.errors} JS error${r.errors === 1 ? '' : 's'}`) : r.failedRequests ? t.fail('failed request') : t.mute(r.opened ? `opened ${truncate(r.opened, 30)}` : r.dialogOpened ? 'opened a dialog' : r.navigatedTo ? `went to ${truncate(r.navigatedTo, 30)}` : r.changed ? 'changed the page' : 'ok');
+    out.push(`   ${glyph} ${t.mute(padStart(String(r.n ?? '-'), 2))} ${padEnd(`${r.role || ''} "${truncate(r.label, 28)}"`, 40)} ${what}${r.state ? t.mute(`  in ${truncate(r.state, 28)}`) : ''}`);
   }
   return out;
 }
@@ -155,7 +158,7 @@ export function verdictLines(s, t, o = {}) {
   const e = s.end || { status: 'pass', exitCode: 0, totalMs: 0, totalUsd: 0 };
   const uniq = uniqueCounted(s).length, raw = counted(s).length;
   const head = e.status === 'not_run' ? { txt: 'CAVE-IN  ·  NOT RUN', c: 'warn', sub: 'Nothing was tested. This is a failure, not a pass.' }
-    : e.status === 'defects' ? { txt: `NUGGETS FOUND  ·  ${uniq} defect${uniq === 1 ? '' : 's'}`, c: 'fail', sub: raw !== uniq ? `Real bugs dug up (${raw} findings across ${modesText(s)}). Fix them and dig again.` : 'Real bugs dug up. Fix them and dig again.' }
+    : e.status === 'defects' ? { txt: `NUGGETS FOUND  ·  ${uniq} defect${uniq === 1 ? '' : 's'}`, c: 'fail', sub: raw !== uniq ? `Real bugs dug up (${raw} findings across ${s.command === 'tunnel' ? `${s.tunnel.pagesEntered} page${s.tunnel.pagesEntered === 1 ? '' : 's'}` : modesText(s)}). Fix them and dig again.` : 'Real bugs dug up. Fix them and dig again.' }
       : { txt: 'SURFACED  ·  CLEAN', c: 'pass', sub: 'No defects found in what was tested.' };
   const paint = (x) => t[head.c](x);
   const side = paint(t.unicode ? '│' : '|');
@@ -170,7 +173,10 @@ export function verdictLines(s, t, o = {}) {
     if (parts.length) out.push(row(`${lab('Severity')}${parts.join(t.mute('  ·  '))}`));
     const d = decidedBy(s);
     if (s.triage === 'cascade' && s.findings.length) out.push(row(`${lab('Decided by')}${t.by('jev', `Jev ${d.jev}`)}${t.mute('  ·  ')}${t.by('claude', `Claude ${d.claude}`)}${t.mute('  ·  ')}${t.by('human', `person ${d.human}`)}${d.dismissed ? t.mute(`  ·  ${d.dismissed} dismissed`) : ''}`));
-    if (s.command === 'tunnel' && e.coverage) out.push(row(`${lab('Coverage')}${e.coverage.exercised}/${e.coverage.controlsFound} controls clicked${e.coverage.skippedByRiskScreen ? t.mute(` · ${e.coverage.skippedByRiskScreen} skipped by risk screen`) : ''}`), row(`${lab('')}${t.mute(`stopped: ${e.coverage.stopReason}`)}`));
+    if (s.command === 'tunnel' && e.coverage) out.push(row(`${lab('Coverage')}${e.coverage.exercised}/${e.coverage.controlsFound} controls clicked${e.coverage.pagesVisited > 1 ? ` on ${e.coverage.pagesVisited} pages` : ''}${e.coverage.skippedByRiskScreen ? t.mute(` · ${e.coverage.skippedByRiskScreen} skipped by risk screen`) : ''}`),
+      ...(s.consistency?.checked ? [row(`${lab('Style')}${s.consistency.outliers.length ? t.warn(`${s.consistency.outliers.map((o) => o.path).slice(0, 3).join(', ')} ${s.consistency.outliers.length === 1 ? 'does' : 'do'} not look like the other pages`) : `all ${s.consistency.pages} pages look like one site`}${t.mute(' (advisory)')}`)] : []),
+      ...(e.coverage.formsFound ? [row(`${lab('Forms')}${e.coverage.formsFilled} filled${e.coverage.forms === 'submit' ? ` · ${e.coverage.formsSubmitted} submitted${e.coverage.submitsBeyondCap ? t.warn(` · ${e.coverage.submitsBeyondCap} over the cap`) : ''}` : t.mute(' · nothing sent')}${e.coverage.formsSkippedSensitive ? t.mute(` · ${e.coverage.formsSkippedSensitive} sensitive skipped`) : ''}`), ...(e.coverage.formsSubmitted ? [row(`${lab('')}${t.mute('test data sent: submissions.jsonl in the run folder')}`)] : [])] : []),
+      ...(e.coverage.pagesDesignChecked || e.coverage.statesExplored ? [row(`${lab('')}${t.mute([e.coverage.pagesDesignChecked ? `${e.coverage.pagesDesignChecked} page${e.coverage.pagesDesignChecked === 1 ? '' : 's'} design-checked` : null, e.coverage.statesExplored ? `${e.coverage.statesExplored} dialog${e.coverage.statesExplored === 1 ? '' : 's'} / panel${e.coverage.statesExplored === 1 ? '' : 's'} opened` : null].filter(Boolean).join(' · '))}`)] : []), row(`${lab('')}${t.mute(`stopped: ${e.coverage.stopReason}`)}`));
     if (s.command === 'dig') out.push(row(`${lab('Checked')}${s.elements} elements · ${modesText(s)}`));
   }
   const floor = claudeOnlyFloorUsd(s);
