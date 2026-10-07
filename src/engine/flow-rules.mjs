@@ -67,6 +67,15 @@ export function sameOrigin(url, origin) {
 const RISKY_PATH = /\/(logout|log-out|signout|sign-out|sign_out|delete|destroy|remove)(\/|$|\?|#)/i;
 export const isRiskyPath = (target) => !!target && RISKY_PATH.test(target);
 
+// A control whose label destroys data, spends money, ends the session or changes a record's state for good is never
+// clicked, and neither is the inline "Yes, ..." that confirms such an action outside a dialog ("Лацдах", then
+// "Тийм, лацдах" on the page itself). Mongolian words are stems, since case endings follow: лацд- seal, батал-/батла-
+// approve, цуцл- cancel (an order or request; "Болих" closes a dialog and stays clickable), татгалз- reject, түгж- lock,
+// архивл- archive, шилжүүл- transfer. A wrong skip costs coverage; a wrong click costs data.
+const RISKY_LABEL = /(delete|remove|устгах|pay|төлбөр|logout|log out|sign out|гарах|reset|drop|seal|лацд|approve|батал|батла|reject|татгалз|revoke|цуцл|lock|түгж|archive|архивл|deactivate|идэвхгүй болго|transfer|шилжүүл)/i;
+const CONFIRM_LABEL = /^\s*(yes|confirm)\b|^\s*(тийм|зөвшөөр)/i;
+export const isRiskyLabel = (label) => !!label && (RISKY_LABEL.test(label) || CONFIRM_LABEL.test(label));
+
 // Login and identity pages are never explored: clicking through them would test the wall, not the app.
 const AUTH_PATH = /\/(login|log-in|signin|sign-in|sso|auth|oauth2?|realms)(\/|$|\?)/i;
 export const isAuthPath = (url) => AUTH_PATH.test(pathOf(url));
