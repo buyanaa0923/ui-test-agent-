@@ -20,8 +20,8 @@ export async function classifyRisk({ label, context = '' }, opts = {}) {
     questions: {
       risky: {
         type: 'noul',
-        instructions: 'Would clicking this button in a banking or lending web app delete data, move or spend money, change someone\'s access or credentials, or end the current login session (log out)?',
-        criteria: { true: 'Yes: irreversible deletion, payment, transfer, disbursement, logout or session end, access change', false: 'No: navigation, search, filter, view, export, cancel, close a dialog or other harmless action' }
+        instructions: 'Would this click itself, in a banking or lending web app, delete data, move or spend money, approve or reject a request, change someone\'s access or credentials, or end the current login session (log out)? Going to a page or section, opening a dialog or form, and closing one are not risky. The context says where the control sits.',
+        criteria: { true: 'Yes: irreversible deletion, payment, transfer, disbursement, approval or rejection, logout or session end, access change', false: 'No: navigation to a page, section or tab, opening a dialog or form, search, filter, view, export, cancel, close a dialog or other harmless action' }
       }
     }
   });

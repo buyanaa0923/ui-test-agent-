@@ -22,7 +22,7 @@ import { loadChecked } from './guard.mjs';
 import { makePicker } from '../models/jev.mjs';
 import { judge } from '../models/judge.mjs';
 import { makeCascade } from '../models/cascade.mjs';
-import { shouldReportDeadClick, dropToolCausedErrors, isAllowedRequest, errorFindingRule, dropNavLoadErrors, routeKey, pathOf, sameOrigin, isRiskyPath, isAuthPath, arrivalProblem } from './flow-rules.mjs';
+import { shouldReportDeadClick, dropToolCausedErrors, isAllowedRequest, errorFindingRule, dropNavLoadErrors, routeKey, pathOf, sameOrigin, isRiskyPath, isRiskyLabel, isStructurallySafe, riskContext, isAuthPath, arrivalProblem } from './flow-rules.mjs';
 import { countsAsDefect } from './dig.mjs';
 import { badIgnoreSelector, preparePage, measureModes, judgeDesign } from './measure.mjs';
 import { resolveContract, contractSummary, VIEWPORTS, ContractError } from './contract.mjs';
@@ -32,7 +32,6 @@ import { isSandboxHost, sensitiveReason, testValue, submitOutcome, findForms, fo
 import { uniqueCounted } from '../core/findings.mjs';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const RISKY = /(delete|remove|устгах|pay|төлбөр|logout|sign out|гарах|reset|drop)/i;
 // Controls in the app's chrome are the same control on every page: tested once per run, not once per page.
 const CHROME = 'nav, header, footer, [role=navigation], [role=banner], [role=contentinfo]';
 const DIALOG = '[role=dialog], [role=alertdialog], [aria-modal=true], dialog[open]';
@@ -232,7 +231,7 @@ export async function tunnel(opts, ctx = {}) {
   const steps = [];
   const findings = [];
   const designFindings = [];
-  const skippedSubmit = new Set(), skippedCommit = new Set();
+  const skippedSubmit = new Set(), skippedCommit = new Set(), skippedLabel = new Set();
   const formRows = [], formSigs = new Set();
   let submits = 0, submitsBeyondCap = 0;
   const ledger = path.join(runDir, 'submissions.jsonl');
@@ -242,12 +241,12 @@ export async function tunnel(opts, ctx = {}) {
   const known = new Set([routeKey(url), routeKey(page.url())]);
   const beyondDepth = new Set();
   const authPagesNotExplored = new Set();
-  let n = 0;
+  let n = 0, spared = 0; // spared: controls the risk screen kept back; they use a step number but not the click budget
   let stopReason = null;
 
   pages: for (let pi = 0; pi < pages.length; pi++) {
     const pg = pages[pi];
-    if (n >= max) { stopReason = 'max-steps'; break; }
+    if (n - spared >= max) { stopReason = 'max-steps'; break; }
     if (pi >= maxPages) { stopReason = 'max-pages'; break; }
     Object.assign(pg, { controls: 0, exercised: 0, stop: null });
     if (pi > 0) {
@@ -294,7 +293,18 @@ export async function tunnel(opts, ctx = {}) {
       if (sso) { // token lives in memory only: every fresh load needs the sign-in step again; losing the session ends the run loudly
         const again = await loadChecked(page, pg.url, { ssoButton: sso });
         if (!again.ok) return { lost: again.problem };
-      } else await page.goto(pg.url, { waitUntil: 'load', timeout: 30000 }).catch(() => {});
+      } else {
+        // SPAs render after load (lazy routes, federated modules): wait for the requests the load started and for
+        // something on screen, as the first load did. A page still blank after that is a failed replay, never a page
+        // with nothing left to click.
+        net.inflight.clear();
+        await page.goto(pg.url, { waitUntil: 'load', timeout: 30000 }).catch(() => {});
+        await quietNetwork(5000);
+        const count = () => page.evaluate(() => document.querySelectorAll('body *').length).catch(() => 0);
+        let els = await count();
+        for (let i = 0; i < 20 && els < 5; i++) { await page.waitForTimeout(250); els = await count(); }
+        if (els < 5) return { failed: `${pg.path} rendered only ${els} element(s) when reloaded` };
+      }
       if (!st.via.length) return { ok: true };
       await page.waitForTimeout(250);
       let lastId = null;
@@ -320,7 +330,7 @@ export async function tunnel(opts, ctx = {}) {
       const scope = st.kind === 'dialog' ? 'dialog' : st.kind === 'reveal' ? (st.hasRegion ? 'region' : null) : 'page';
       if (!scope) return null;
       for (;;) {
-        if (n >= max) return null;
+        if (n - spared >= max) return null;
         const r = await resetTo(st);
         if (r.lost) return { lost: r.lost };
         if (!r.ok) return null;
@@ -375,7 +385,7 @@ export async function tunnel(opts, ctx = {}) {
         row.valid = state.valid; if (state.invalid.length) row.invalid = state.invalid;
 
         // Submit, only when asked, when there is something to submit with, and within the cap.
-        const why = forms !== 'submit' ? 'fill only' : !f.submit ? 'no submit button' : state.submitDisabled ? 'submit button disabled' : !state.valid ? `Mole could not produce valid data for ${state.invalid.join(', ')}` : RISKY.test(f.submit.label) ? `risky label "${f.submit.label}"` : submits >= maxSubmits ? `submit cap (${maxSubmits}) reached` : null;
+        const why = forms !== 'submit' ? 'fill only' : !f.submit ? 'no submit button' : state.submitDisabled ? 'submit button disabled' : !state.valid ? `Mole could not produce valid data for ${state.invalid.join(', ')}` : isRiskyLabel(f.submit.label) ? `risky label "${f.submit.label}"` : submits >= maxSubmits ? `submit cap (${maxSubmits}) reached` : null;
         if (why?.startsWith('submit cap')) submitsBeyondCap++; // only forms the cap alone kept back
         let screened = null;
         if (!why && riskScreen) { screened = await cascade.screenRisk({ label: f.submit.label, role: 'button', context: `submits the form "${f.name}"` }); }
@@ -413,7 +423,7 @@ export async function tunnel(opts, ctx = {}) {
 
     for (let si = 0; si < pg.states.length; si++) {
       const st = pg.states[si];
-      if (n >= max) { stopReason = 'max-steps'; break pages; }
+      if (n - spared >= max) { stopReason = 'max-steps'; break pages; }
       Object.assign(st, { controls: 0, exercised: 0, stop: null });
       if (si > 0) {
         h = meter.start(`state-${pi + 1}.${si}`, { page: pg.path, state: st.label });
@@ -448,7 +458,7 @@ export async function tunnel(opts, ctx = {}) {
       let onState = 0;
 
       for (;;) {
-        if (n >= max) { st.stop = 'max-steps'; break; }
+        if (n - spared >= max) { st.stop = 'max-steps'; break; }
         if (onState >= maxPerPage) { st.stop = 'max-per-page'; break; }
         if (!fresh) {
           const r = await resetTo(st);
@@ -466,7 +476,9 @@ export async function tunnel(opts, ctx = {}) {
           if (pathRisk) riskyPaths.add(key);
           if (x.submits) skippedSubmit.add(key);
           if (commit) skippedCommit.add(key);
-          return { ...x, key, visited: visited.has(key) || x.disabled || RISKY.test(x.label) || pathRisk || x.submits || commit };
+          const labelRisk = isRiskyLabel(x.label);
+          if (labelRisk) skippedLabel.add(key);
+          return { ...x, key, visited: visited.has(key) || x.disabled || labelRisk || pathRisk || x.submits || commit };
         });
         cands.forEach((x) => { seen.add(x.key); stateKeys.add(x.key); });
         st.controls = stateKeys.size;
@@ -481,9 +493,10 @@ export async function tunnel(opts, ctx = {}) {
         const rect = await loc.boundingBox().catch(() => null);
         const where = { page: pg.path, ...(st.label ? { state: st.label } : {}) };
         bus.emit('control.pick', { n, role: c.role, label: c.label, by: p.source, confidence: p.confidence, rect, ...where });
-        if (riskScreen) {
-          const rs = await cascade.screenRisk(c);
+        if (riskScreen && !isStructurallySafe(c)) {
+          const rs = await cascade.screenRisk({ ...c, context: riskContext(c, { page: pg.path, state: st.label }) });
           if (rs.risky) {
+            spared++; onState--;
             steps.push({ n, ...where, target: `${c.role} "${c.label}"`, pickedBy: p.source, confidence: p.confidence, skipped: `risk screen (${rs.by})`, changed: false, errors: [], failedRequests: [] });
             bus.emit('control.result', { n, label: c.label, ...where, skipped: `risk screen (${rs.by})` });
             fresh = true; // nothing was clicked: the state is still clean
@@ -568,7 +581,7 @@ export async function tunnel(opts, ctx = {}) {
         }
       }
       if (forms !== 'off' && st.stop !== 'replay-failed') { const f = await testForms(st, nameOf); if (f?.lost) { stopReason = `session-lost: ${f.lost}`; break pages; } }
-      if (si === 0) Object.assign(pg, { controls: st.controls, exercised: st.exercised, stop: st.stop });
+      if (si === 0) Object.assign(pg, { controls: st.controls, exercised: st.exercised, stop: st.stop, ...(st.problem ? { problem: st.problem } : {}) });
     }
   }
   const statesOf = (x) => (x.states || []).slice(1);
@@ -593,7 +606,7 @@ export async function tunnel(opts, ctx = {}) {
   const stateRows = pageRows.flatMap((x) => x.states || []);
   const coverage = {
     controlsFound: seen.size, exercised, selfLinksNotCountedAsDead: steps.filter((x) => x.selfLink && !x.changed).length, crossOriginBlocked: [...blockedOrigins],
-    skippedByRiskScreen: steps.filter((x) => x.skipped).length, skippedByLabelRule: [...seen].filter((k) => RISKY.test(k.split('|')[1]) && !visited.has(k)).length,
+    skippedByRiskScreen: steps.filter((x) => x.skipped).length, skippedByLabelRule: [...skippedLabel].filter((k) => !visited.has(k)).length,
     skippedByPathRule: [...riskyPaths].filter((k) => !visited.has(k)).length,
     skippedSubmit: [...skippedSubmit].filter((k) => !visited.has(k)).length, skippedDialogCommit: [...skippedCommit].filter((k) => !visited.has(k)).length,
     stateDepth, statesFound: stateRows.length + statesBeyondCap, statesExplored: stateRows.filter((x) => !['not-reached', 'replay-failed'].includes(x.stop)).length,

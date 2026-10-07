@@ -106,12 +106,15 @@ export async function pickWithClaude({ goal, candidates }, { meter, send } = {})
 }
 
 // Yes/no question for the risk screen when Jev is unsure. Same validation and budget rules as the other Claude calls.
+// The click itself is what is judged: reaching a page or opening a form is how a tester gets to the risky button, and
+// is never risky on its own. A model left unsure about a sidebar item skips half the app, so it is told what is safe.
+const RISK_SYSTEM = 'You are a safety screen for an automated UI tester in a banking/lending web app. Labels may be English or Mongolian. Reply ONLY JSON: {"risky":true|false,"confidence":<0-1>}. risky=true means this click itself would delete data, move or spend money, approve or reject a request, change someone\'s access or credentials, or end the current login session (log out). Safe (risky=false): going to a page or section (navigation items, links, menu entries and tabs that name a section, list, report or status), opening a dialog, form or panel, closing or cancelling a dialog, searching, filtering, sorting and viewing. The context says where the control sits. Be decisive: confidence 0.9 or more when the label plainly names a section or view; lower only when the click could really commit a change.';
+
 export async function claudeRisk({ label, context = '' }, { meter, send } = {}) {
-  const system = 'You are a safety screen for an automated UI tester in a banking/lending web app. Labels may be English or Mongolian. Reply ONLY JSON: {"risky":true|false,"confidence":<0-1>}. risky=true means clicking would delete data, move or spend money, change someone\'s access or credentials, or end the current login session (log out).';
   const prompt = `Control label: "${label}"\nContext: ${context || 'none'}`;
   meter?.assertBudget();
   const h = meter?.start('escalate-claude-risk');
-  const res = await breaker.run(() => withRetry(() => (send ? send(prompt) : route(prompt, system))));
+  const res = await breaker.run(() => withRetry(() => (send ? send(prompt) : route(prompt, RISK_SYSTEM))));
   meter?.end(h, res.usage);
   const o = parseJson(res.text, 'object');
   if (typeof o.risky !== 'boolean' || typeof o.confidence !== 'number') throw new Error('bad risk answer from Claude');
@@ -121,5 +124,5 @@ export async function claudeRisk({ label, context = '' }, { meter, send } = {}) 
 // Raw senders for the evaluation harness (so it can cache and replay Claude calls).
 export const viaApiForEval = {
   judge: (prompt) => viaApi(prompt),
-  risk: () => (prompt) => viaApi(prompt, 'You are a safety screen for an automated UI tester in a banking/lending web app. Labels may be English or Mongolian. Reply ONLY JSON: {"risky":true|false,"confidence":<0-1>}. risky=true means clicking would delete data, move or spend money, change someone\'s access or credentials, or end the current login session (log out).')
+  risk: () => (prompt) => viaApi(prompt, RISK_SYSTEM)
 };

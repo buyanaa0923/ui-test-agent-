@@ -67,6 +67,32 @@ export function sameOrigin(url, origin) {
 const RISKY_PATH = /\/(logout|log-out|signout|sign-out|sign_out|delete|destroy|remove)(\/|$|\?|#)/i;
 export const isRiskyPath = (target) => !!target && RISKY_PATH.test(target);
 
+// A control whose label destroys data, spends money, ends the session or changes a record's state for good is never
+// clicked, and neither is the inline "Yes, ..." that confirms such an action outside a dialog ("Лацдах", then
+// "Тийм, лацдах" on the page itself). Mongolian words are stems, since case endings follow: лацд- seal, батал-/батла-
+// approve, цуцл- cancel (an order or request; "Болих" closes a dialog and stays clickable), татгалз- reject, түгж- lock,
+// архивл- archive, шилжүүл- transfer. A wrong skip costs coverage; a wrong click costs data.
+const RISKY_LABEL = /(delete|remove|устгах|pay|төлбөр|logout|log out|sign out|гарах|reset|drop|seal|лацд|approve|батал|батла|reject|татгалз|revoke|цуцл|lock|түгж|archive|архивл|deactivate|идэвхгүй болго|transfer|шилжүүл)/i;
+const CONFIRM_LABEL = /^\s*(yes|confirm)\b|^\s*(тийм|зөвшөөр)/i;
+export const isRiskyLabel = (label) => !!label && (RISKY_LABEL.test(label) || CONFIRM_LABEL.test(label));
+
+// Controls whose kind alone says a click cannot commit anything, so the risk screen does not ask a model about them:
+// a tab, an accordion's summary, a same-origin link (a GET; risky paths and labels were already skipped), and the
+// button that closes or cancels the dialog it sits in (the exact word only: "Бүртгэл хаах" closes an account).
+const CLOSE_LABEL = /^\s*(close|close (modal|dialog)|cancel|dismiss|хаах|болих)\s*$/i;
+export function isStructurallySafe(c) {
+  if (c.role === 'tab' || c.role === 'summary') return true;
+  if (c.role === 'link' && c.target && !isRiskyPath(c.target)) return true;
+  return !!c.inDialog && CLOSE_LABEL.test(c.label || '');
+}
+
+// What the risk screen is told about a control besides its label: where it sits and on which page. Without it a
+// sidebar item and a "commit" button look alike, and the model stays unsure about both.
+export function riskContext(c, { page = null, state = null } = {}) {
+  const where = c.inDialog ? `inside ${state || 'a dialog'}` : c.global ? 'in the app navigation (sidebar, header or footer)' : state ? `inside ${state}` : 'in the page content';
+  return [where, c.target ? `links to ${c.target}` : null, page ? `on page ${page}` : null].filter(Boolean).join(', ');
+}
+
 // Login and identity pages are never explored: clicking through them would test the wall, not the app.
 const AUTH_PATH = /\/(login|log-in|signin|sign-in|sso|auth|oauth2?|realms)(\/|$|\?)/i;
 export const isAuthPath = (url) => AUTH_PATH.test(pathOf(url));
