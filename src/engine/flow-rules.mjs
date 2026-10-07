@@ -76,6 +76,23 @@ const RISKY_LABEL = /(delete|remove|устгах|pay|төлбөр|logout|log out
 const CONFIRM_LABEL = /^\s*(yes|confirm)\b|^\s*(тийм|зөвшөөр)/i;
 export const isRiskyLabel = (label) => !!label && (RISKY_LABEL.test(label) || CONFIRM_LABEL.test(label));
 
+// Controls whose kind alone says a click cannot commit anything, so the risk screen does not ask a model about them:
+// a tab, an accordion's summary, a same-origin link (a GET; risky paths and labels were already skipped), and the
+// button that closes or cancels the dialog it sits in (the exact word only: "Бүртгэл хаах" closes an account).
+const CLOSE_LABEL = /^\s*(close|close (modal|dialog)|cancel|dismiss|хаах|болих)\s*$/i;
+export function isStructurallySafe(c) {
+  if (c.role === 'tab' || c.role === 'summary') return true;
+  if (c.role === 'link' && c.target && !isRiskyPath(c.target)) return true;
+  return !!c.inDialog && CLOSE_LABEL.test(c.label || '');
+}
+
+// What the risk screen is told about a control besides its label: where it sits and on which page. Without it a
+// sidebar item and a "commit" button look alike, and the model stays unsure about both.
+export function riskContext(c, { page = null, state = null } = {}) {
+  const where = c.inDialog ? `inside ${state || 'a dialog'}` : c.global ? 'in the app navigation (sidebar, header or footer)' : state ? `inside ${state}` : 'in the page content';
+  return [where, c.target ? `links to ${c.target}` : null, page ? `on page ${page}` : null].filter(Boolean).join(', ');
+}
+
 // Login and identity pages are never explored: clicking through them would test the wall, not the app.
 const AUTH_PATH = /\/(login|log-in|signin|sign-in|sso|auth|oauth2?|realms)(\/|$|\?)/i;
 export const isAuthPath = (url) => AUTH_PATH.test(pathOf(url));
